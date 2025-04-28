@@ -1,6 +1,10 @@
-package logger
+package middlewares
 
 import (
+	"bytes"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -8,63 +12,43 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
-	"web_app/setting"
-
-	"github.com/gin-gonic/gin"
-	"github.com/natefinch/lumberjack"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var lg *zap.Logger
 
-// Init 初始化Logger
-func Init(cfg *setting.LogConfig) (err error) {
-	var writeSyncer = getLogWriter(
-		//使用全局结构体获取配置信息
-		cfg.FileName,
-		cfg.MaxSize,
-		cfg.MaxBackups,
-		cfg.MaxAge,
-		//只用viper获取配置信息
-		//viper.GetString("log.filename"),
-		//viper.GetInt("log.max_size"),
-		//viper.GetInt("log.max_backups"),
-		//viper.GetInt("log.max_age"),
-	)
-	encoder := getEncoder()
-	var l = new(zapcore.Level)
-	err = l.UnmarshalText([]byte(viper.GetString("log.level")))
-	if err != nil {
-		return
-	}
-	core := zapcore.NewCore(encoder, writeSyncer, l)
+const Body = "body"
 
-	lg = zap.New(core, zap.AddCaller())
-	// 替换zap包中全局的logger实例，后续在其他包中只需使用zap.L()调用即可
-	zap.ReplaceGlobals(lg)
-	return
+// ErrLogMsg 日志数据
+func ErrLogMsg(ctx *gin.Context) []zap.Field {
+	var body string
+	data, ok := ctx.Get(Body)
+	if ok {
+		body = string(data.([]byte))
+	}
+	path := ctx.Request.URL.Path
+	query := ctx.Request.URL.RawQuery
+	fields := []zap.Field{
+		zap.Int("status", ctx.Writer.Status()),            //记录响应的状态码
+		zap.String("method", ctx.Request.Method),          //记录请求方法
+		zap.String("path", path),                          //记录请求的路径
+		zap.String("query", query),                        //记录请求的原始查询参数
+		zap.String("ip", ctx.ClientIP()),                  //记录客户端的 IP 地址
+		zap.String("user-agent", ctx.Request.UserAgent()), //记录客户端的 user-agent
+		zap.String("body", body),                          //记录请求的主体数据
+	}
+	return fields
 }
 
-func getEncoder() zapcore.Encoder {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.TimeKey = "time"
-	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderConfig.EncodeDuration = zapcore.SecondsDurationEncoder
-	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	return zapcore.NewJSONEncoder(encoderConfig)
-}
-
-func getLogWriter(filename string, maxSize, maxBackup, maxAge int) zapcore.WriteSyncer {
-	lumberJackLogger := &lumberjack.Logger{
-		Filename:   filename,
-		MaxSize:    maxSize,
-		MaxBackups: maxBackup,
-		MaxAge:     maxAge,
+// LogBody 读取 body 内容缓存下来，为之后打印日志做准备（读取请求体的内容并将其存储在 Gin 上下文中）
+func LogBody() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		bodyBytes, _ := io.ReadAll(ctx.Request.Body)
+		_ = ctx.Request.Body.Close()                                //关闭原始请求主体的读取，以确保资源的正确释放
+		ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // 创建一个新地可读取的请求主体，并将之前读取的 bodyBytes 作为内容，最后将其设置回 ctx.Request.Body。
+		// 使用一个新的缓冲区来存储请求主体的内容，而不是直接读取原始的请求主体。这样我们就可以在不影响原始请求主体的情况下，对请求主体的内容进行处理和修改
+		ctx.Set("body", bodyBytes)
+		ctx.Next()
 	}
-	return zapcore.AddSync(lumberJackLogger)
 }
 
 // GinLogger 接收gin框架默认的日志
@@ -106,6 +90,7 @@ func GinRecovery(stack bool) gin.HandlerFunc {
 				}
 
 				httpRequest, _ := httputil.DumpRequest(c.Request, false)
+
 				if brokenPipe {
 					lg.Error(c.Request.URL.Path,
 						zap.Any("error", err),
