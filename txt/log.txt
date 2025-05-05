@@ -119,6 +119,10 @@ tips: 模糊查询不能用 '%name%' 要防止SQL注入
     1.完成了RefuseApplication接口，并完成了测试
     2.AcceptApplication接口完成了大部分，  由于涉及发送通知，所以还不能调用
 
+5/5 周一 扬尘
+
+
+
 写到了Tx 下的 AcceptApplicationTx ，前面是AcceptApplication
 
 再写message的sqlc
