@@ -18,3 +18,45 @@ func (r *RDB) AddRelationAccount(ctx context.Context, relationID int64, accountI
 	}
 	return r.rdb.SAdd(ctx, utils.LinkStr(keyGroup, utils.IDToString(relationID)), data...).Err()
 }
+
+// GetAllAccountsByRelationID 根据关系ID获取所有有关系的用户
+func (r *RDB) GetAllAccountsByRelationID(ctx context.Context, relationID int64) ([]int64, error) {
+	id := utils.IDToString(relationID)
+	key := utils.LinkStr(keyGroup, id)
+	accountsIDStr, err := r.rdb.SMembers(ctx, key).Result()
+	if err != nil {
+		return nil, err
+	}
+	accountIDs := make([]int64, 0, len(accountsIDStr))
+	for _, str := range accountsIDStr {
+		accountID := utils.StringToIDMust(str)
+		accountIDs = append(accountIDs, accountID)
+	}
+	return accountIDs, nil
+}
+
+// DeleteRelations 删除指定账号的指定好友
+func (r *RDB) DeleteRelations(ctx context.Context, relationIDs ...int64) error {
+	if len(relationIDs) == 0 {
+		return nil
+	}
+	pipe := r.rdb.TxPipeline() // 创建一个 redis 管道，可以在单个操作中批量执行多个命令，提高了性能
+	for _, relationID := range relationIDs {
+		pipe.Del(ctx, utils.LinkStr(keyGroup, utils.IDToString(relationID))) // 添加删除命令到管道中
+	}
+	_, err := pipe.Exec(ctx) // 执行管道中的所有命令
+	return err
+}
+
+// DeleteAccountFromRelations 从多个群聊中删除指定账号
+func (r *RDB) DeleteAccountFromRelations(ctx context.Context, accountID int64, relationIDs ...int64) error {
+	if len(relationIDs) == 0 {
+		return nil
+	}
+	pipe := r.rdb.TxPipeline()
+	for _, relationID := range relationIDs {
+		pipe.SRem(ctx, utils.LinkStr(keyGroup, utils.IDToString(relationID)), utils.IDToString(accountID))
+	}
+	_, err := pipe.Exec(ctx)
+	return err
+}

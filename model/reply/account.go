@@ -37,7 +37,7 @@ type ParamFriendInfo struct {
 
 type ParamGetAccountsByName struct {
 	List  []*ParamFriendInfo `json:"list,omitempty"`  // 账号列表
-	Total int64              `json:"total,omitempty"` // 总数
+	Total int64              `json:"total,omitempty"` // 总页码数
 }
 
 type ParamGetAccountByID struct {

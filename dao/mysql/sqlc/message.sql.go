@@ -30,6 +30,7 @@ type CreateMessageParams struct {
 	RelationID int64
 }
 
+// {notify_type:string,msg_type:string}
 func (q *Queries) CreateMessage(ctx context.Context, arg *CreateMessageParams) error {
 	_, err := q.exec(ctx, q.createMessageStmt, createMessage,
 		arg.NotifyType,
@@ -102,13 +103,551 @@ func (q *Queries) GetMessageInfoTx(ctx context.Context) (*GetMessageInfoTxRow, e
 	return &i, err
 }
 
-const updateMsgReads = `-- name: UpdateMsgReads :exec
-update messages
-set read_ids = json_array_append(read_ids, '$', @accountID)
-where relation_id = ?
+const getMsgsByContent = `-- name: GetMsgsByContent :many
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       m1.msg_extend,
+       m1.file_id,
+       m1.account_id,
+       m1.relation_id,
+       m1.create_at,
+       count(*) over () as total
+from messages m1
+         join settings s on m1.relation_id = s.relation_id and s.account_id = ?
+where (not is_revoke)
+    and (m1.msg_content like concat('%', ?, '%') or m1.msg_extend like concat('%', ?, '%'))
+order by m1.create_at desc
+    limit ? offset ?
 `
 
-func (q *Queries) UpdateMsgReads(ctx context.Context, relationID int64) error {
-	_, err := q.exec(ctx, q.updateMsgReadsStmt, updateMsgReads, relationID)
-	return err
+type GetMsgsByContentParams struct {
+	AccountID int64
+	CONCAT    interface{}
+	CONCAT_2  interface{}
+	Limit     int32
+	Offset    int32
+}
+
+type GetMsgsByContentRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	Total      interface{}
+}
+
+func (q *Queries) GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentParams) ([]*GetMsgsByContentRow, error) {
+	rows, err := q.query(ctx, q.getMsgsByContentStmt, getMsgsByContent,
+		arg.AccountID,
+		arg.CONCAT,
+		arg.CONCAT_2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMsgsByContentRow{}
+	for rows.Next() {
+		var i GetMsgsByContentRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotifyType,
+			&i.MsgType,
+			&i.MsgContent,
+			&i.MsgExtend,
+			&i.FileID,
+			&i.AccountID,
+			&i.RelationID,
+			&i.CreateAt,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getMsgsByContentAndRelation = `-- name: GetMsgsByContentAndRelation :many
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       m1.msg_extend,
+       m1.file_id,
+       m1.account_id,
+       m1.relation_id,
+       m1.create_at,
+       count(*) over () as total
+from messages m1
+         join settings s on m1.relation_id = ? and m1.relation_id = s.relation_id and s.account_id = ?
+where (not is_revoke)
+  and (m1.msg_content like concat('%', ?, '%') or m1.msg_extend like concat('%', ?, '%'))
+order by m1.create_at desc
+limit ? offset ?
+`
+
+type GetMsgsByContentAndRelationParams struct {
+	RelationID int64
+	AccountID  int64
+	CONCAT     interface{}
+	CONCAT_2   interface{}
+	Limit      int32
+	Offset     int32
+}
+
+type GetMsgsByContentAndRelationRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	Total      interface{}
+}
+
+func (q *Queries) GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsByContentAndRelationParams) ([]*GetMsgsByContentAndRelationRow, error) {
+	rows, err := q.query(ctx, q.getMsgsByContentAndRelationStmt, getMsgsByContentAndRelation,
+		arg.RelationID,
+		arg.AccountID,
+		arg.CONCAT,
+		arg.CONCAT_2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMsgsByContentAndRelationRow{}
+	for rows.Next() {
+		var i GetMsgsByContentAndRelationRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotifyType,
+			&i.MsgType,
+			&i.MsgContent,
+			&i.MsgExtend,
+			&i.FileID,
+			&i.AccountID,
+			&i.RelationID,
+			&i.CreateAt,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getMsgsByRelationIDAndTime = `-- name: GetMsgsByRelationIDAndTime :many
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       m1.msg_extend,
+       m1.file_id,
+       m1.account_id,
+       m1.rly_msg_id,
+       m1.relation_id,
+       m1.create_at,
+       m1.is_revoke,
+       m1.is_top,
+       m1.is_pin,
+       m1.pin_time,
+       m1.read_ids,
+       count(*) over () as total,
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count
+from messages m1
+where m1.relation_id = ?
+  and m1.create_at < ?
+order by m1.create_at desc
+limit ? offset ?
+`
+
+type GetMsgsByRelationIDAndTimeParams struct {
+	RelationID   int64
+	RelationID_2 int64
+	CreateAt     time.Time
+	Limit        int32
+	Offset       int32
+}
+
+type GetMsgsByRelationIDAndTimeRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RlyMsgID   sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	IsRevoke   bool
+	IsTop      bool
+	IsPin      bool
+	PinTime    time.Time
+	ReadIds    json.RawMessage
+	Total      interface{}
+	ReplyCount int64
+}
+
+func (q *Queries) GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsByRelationIDAndTimeParams) ([]*GetMsgsByRelationIDAndTimeRow, error) {
+	rows, err := q.query(ctx, q.getMsgsByRelationIDAndTimeStmt, getMsgsByRelationIDAndTime,
+		arg.RelationID,
+		arg.RelationID_2,
+		arg.CreateAt,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetMsgsByRelationIDAndTimeRow{}
+	for rows.Next() {
+		var i GetMsgsByRelationIDAndTimeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotifyType,
+			&i.MsgType,
+			&i.MsgContent,
+			&i.MsgExtend,
+			&i.FileID,
+			&i.AccountID,
+			&i.RlyMsgID,
+			&i.RelationID,
+			&i.CreateAt,
+			&i.IsRevoke,
+			&i.IsTop,
+			&i.IsPin,
+			&i.PinTime,
+			&i.ReadIds,
+			&i.Total,
+			&i.ReplyCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPinMsgsByRelationID = `-- name: GetPinMsgsByRelationID :many
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       m1.msg_extend,
+       m1.file_id,
+       m1.account_id,
+       m1.relation_id,
+       m1.create_at,
+       m1.is_revoke,
+       m1.is_top,
+       m1.is_pin,
+       m1.pin_time,
+       m1.read_ids,
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
+       count(*) over () as total
+from messages m1
+where m1.relation_id = ? and m1.is_pin = true
+order by m1.pin_time desc
+limit ? offset ?
+`
+
+type GetPinMsgsByRelationIDParams struct {
+	RelationID   int64
+	RelationID_2 int64
+	Limit        int32
+	Offset       int32
+}
+
+type GetPinMsgsByRelationIDRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	IsRevoke   bool
+	IsTop      bool
+	IsPin      bool
+	PinTime    time.Time
+	ReadIds    json.RawMessage
+	ReplyCount int64
+	Total      interface{}
+}
+
+func (q *Queries) GetPinMsgsByRelationID(ctx context.Context, arg *GetPinMsgsByRelationIDParams) ([]*GetPinMsgsByRelationIDRow, error) {
+	rows, err := q.query(ctx, q.getPinMsgsByRelationIDStmt, getPinMsgsByRelationID,
+		arg.RelationID,
+		arg.RelationID_2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetPinMsgsByRelationIDRow{}
+	for rows.Next() {
+		var i GetPinMsgsByRelationIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotifyType,
+			&i.MsgType,
+			&i.MsgContent,
+			&i.MsgExtend,
+			&i.FileID,
+			&i.AccountID,
+			&i.RelationID,
+			&i.CreateAt,
+			&i.IsRevoke,
+			&i.IsTop,
+			&i.IsPin,
+			&i.PinTime,
+			&i.ReadIds,
+			&i.ReplyCount,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRlyMsgsInfoByMsgID = `-- name: GetRlyMsgsInfoByMsgID :many
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       m1.msg_extend,
+       m1.file_id,
+       m1.account_id,
+       m1.relation_id,
+       m1.create_at,
+       m1.is_revoke,
+       m1.is_top,
+       m1.is_pin,
+       m1.pin_time,
+       m1.read_ids,
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
+       count(*) over () as total
+from messages m1
+where m1.relation_id = ? and m1.rly_msg_id = ?
+order by m1.create_at
+limit ? offset ?
+`
+
+type GetRlyMsgsInfoByMsgIDParams struct {
+	RelationID   int64
+	RelationID_2 int64
+	RlyMsgID     sql.NullInt64
+	Limit        int32
+	Offset       int32
+}
+
+type GetRlyMsgsInfoByMsgIDRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	IsRevoke   bool
+	IsTop      bool
+	IsPin      bool
+	PinTime    time.Time
+	ReadIds    json.RawMessage
+	ReplyCount int64
+	Total      interface{}
+}
+
+func (q *Queries) GetRlyMsgsInfoByMsgID(ctx context.Context, arg *GetRlyMsgsInfoByMsgIDParams) ([]*GetRlyMsgsInfoByMsgIDRow, error) {
+	rows, err := q.query(ctx, q.getRlyMsgsInfoByMsgIDStmt, getRlyMsgsInfoByMsgID,
+		arg.RelationID,
+		arg.RelationID_2,
+		arg.RlyMsgID,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetRlyMsgsInfoByMsgIDRow{}
+	for rows.Next() {
+		var i GetRlyMsgsInfoByMsgIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotifyType,
+			&i.MsgType,
+			&i.MsgContent,
+			&i.MsgExtend,
+			&i.FileID,
+			&i.AccountID,
+			&i.RelationID,
+			&i.CreateAt,
+			&i.IsRevoke,
+			&i.IsTop,
+			&i.IsPin,
+			&i.PinTime,
+			&i.ReadIds,
+			&i.ReplyCount,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const offerMsgsByAccountIDAndTime = `-- name: OfferMsgsByAccountIDAndTime :many
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       m1.msg_extend,
+       m1.file_id,
+       m1.account_id,
+       m1.rly_msg_id,
+       m1.relation_id,
+       m1.create_at,
+       m1.is_revoke,
+       m1.is_top,
+       m1.is_pin,
+       m1.pin_time,
+       m1.read_ids,
+       count(*) over () as total,
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = m1.relation_id) as reply_count
+from messages m1
+         join settings s on m1.relation_id = s.relation_id and s.account_id = ?
+where m1.create_at > ?
+limit ? offset ?
+`
+
+type OfferMsgsByAccountIDAndTimeParams struct {
+	AccountID int64
+	CreateAt  time.Time
+	Limit     int32
+	Offset    int32
+}
+
+type OfferMsgsByAccountIDAndTimeRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RlyMsgID   sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	IsRevoke   bool
+	IsTop      bool
+	IsPin      bool
+	PinTime    time.Time
+	ReadIds    json.RawMessage
+	Total      interface{}
+	ReplyCount int64
+}
+
+func (q *Queries) OfferMsgsByAccountIDAndTime(ctx context.Context, arg *OfferMsgsByAccountIDAndTimeParams) ([]*OfferMsgsByAccountIDAndTimeRow, error) {
+	rows, err := q.query(ctx, q.offerMsgsByAccountIDAndTimeStmt, offerMsgsByAccountIDAndTime,
+		arg.AccountID,
+		arg.CreateAt,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*OfferMsgsByAccountIDAndTimeRow{}
+	for rows.Next() {
+		var i OfferMsgsByAccountIDAndTimeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NotifyType,
+			&i.MsgType,
+			&i.MsgContent,
+			&i.MsgExtend,
+			&i.FileID,
+			&i.AccountID,
+			&i.RlyMsgID,
+			&i.RelationID,
+			&i.CreateAt,
+			&i.IsRevoke,
+			&i.IsTop,
+			&i.IsPin,
+			&i.PinTime,
+			&i.ReadIds,
+			&i.Total,
+			&i.ReplyCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

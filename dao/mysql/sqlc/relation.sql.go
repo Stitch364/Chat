@@ -25,6 +25,58 @@ func (q *Queries) CreateFriendRelation(ctx context.Context, arg *CreateFriendRel
 	return err
 }
 
+const deleteFriendRelationsByAccountID = `-- name: DeleteFriendRelationsByAccountID :exec
+delete
+from relations
+where relation = 'friend'
+  and (account1_id = ? or account2_id = ?)
+`
+
+type DeleteFriendRelationsByAccountIDParams struct {
+	Account1ID sql.NullInt64
+	Account2ID sql.NullInt64
+}
+
+func (q *Queries) DeleteFriendRelationsByAccountID(ctx context.Context, arg *DeleteFriendRelationsByAccountIDParams) error {
+	_, err := q.exec(ctx, q.deleteFriendRelationsByAccountIDStmt, deleteFriendRelationsByAccountID, arg.Account1ID, arg.Account2ID)
+	return err
+}
+
+const getFriendRelationIDsByAccountID = `-- name: GetFriendRelationIDsByAccountID :many
+select  id
+from relations
+where relation = 'friend'
+  and (account1_id = ? or account2_id = ?)
+`
+
+type GetFriendRelationIDsByAccountIDParams struct {
+	Account1ID sql.NullInt64
+	Account2ID sql.NullInt64
+}
+
+func (q *Queries) GetFriendRelationIDsByAccountID(ctx context.Context, arg *GetFriendRelationIDsByAccountIDParams) ([]int64, error) {
+	rows, err := q.query(ctx, q.getFriendRelationIDsByAccountIDStmt, getFriendRelationIDsByAccountID, arg.Account1ID, arg.Account2ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFriendRelationIdByID1AndID1 = `-- name: GetFriendRelationIdByID1AndID1 :one
 select id from relations where account1_id = ? and account2_id = ? and relation = 'friend'
 `

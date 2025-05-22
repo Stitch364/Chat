@@ -1,6 +1,7 @@
 package global
 
 import (
+	"chat/manager"
 	"chat/model/config"
 	"chat/pkg/emailMark"
 	"github.com/XYYSWK/Lutils/pkg/app"
@@ -20,6 +21,6 @@ var (
 	TokenMaker     token.MakerToken     // token
 	EmailMark      *emailMark.EmailMark // 验证码
 	GenerateID     *snowflake.Snowflake //snowflake 雪花算法生成的 ID
-	//	ChatMap        *manager.ChatMap     // 聊天链接管理器
-	OBS upload.OBS
+	ChatMap        *manager.ChatMap     // 聊天链接管理器
+	OBS            upload.OBS
 )

@@ -81,18 +81,55 @@ func (store *MySQLDB) CreateAccountWithTx(ctx context.Context, rdb *operate.RDB,
 
 func (store *MySQLDB) DeleteAccountWithTx(ctx context.Context, rdb *operate.RDB, accountID int64) error {
 	return store.execTx(ctx, func(queries *db.Queries) error {
-		//var err error
+		var err error
 		//判断用户是否是群主
+		var isLeader bool
+		err = tool.DoThat(err, func() error {
+			isLeader, err = queries.ExistsGroupLeaderByAccountIDWithLock(ctx, accountID)
+			return err
+		})
+		if isLeader {
+			return ErrAccountGroupLeader
+		}
+		//删除好友（先查询再删除）
+		var friendRelationIDs []int64
+		err = tool.DoThat(err, func() error {
+			friendRelationIDs, err = queries.GetFriendRelationIDsByAccountID(ctx, &db.GetFriendRelationIDsByAccountIDParams{
+				Account1ID: sql.NullInt64{Int64: accountID, Valid: true},
+				Account2ID: sql.NullInt64{Int64: accountID, Valid: true},
+			})
 
-		//删除好友
-
-		//删除群
-
+			err = tool.DoThat(err, func() error {
+				return queries.DeleteFriendRelationsByAccountID(ctx, &db.DeleteFriendRelationsByAccountIDParams{
+					Account1ID: sql.NullInt64{Int64: accountID, Valid: true},
+					Account2ID: sql.NullInt64{Int64: accountID, Valid: true},
+				})
+			})
+			return err
+		})
+		//删除群(先查询再删除)
+		var groupRelationIDs []int64
+		err = tool.DoThat(err, func() error {
+			groupRelationIDs, err = queries.GetRelationIDsByAccountIDFromSettings(ctx, accountID)
+			err = tool.DoThat(err, func() error {
+				err = queries.DeleteSettingsByAccountID(ctx, accountID)
+				return err
+			})
+			return err
+		})
 		//删除账户
-
-		//从redis中删除关系
-
-		//从redis中删除账户所在的群中的该账户
-		return nil
+		err = tool.DoThat(err, func() error {
+			err = queries.DeleteAccount(ctx, accountID)
+			return err
+		})
+		//从redis中删除该账户的好友关系
+		err = tool.DoThat(err, func() error {
+			return rdb.DeleteRelations(ctx, friendRelationIDs...)
+		})
+		// 在 redis 中删除该账户所在的群聊中的该账户
+		err = tool.DoThat(err, func() error {
+			return rdb.DeleteAccountFromRelations(ctx, accountID, groupRelationIDs...)
+		})
+		return err
 	})
 }

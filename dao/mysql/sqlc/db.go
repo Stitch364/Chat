@@ -54,6 +54,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteApplicationStmt, err = db.PrepareContext(ctx, deleteApplication); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteApplication: %w", err)
 	}
+	if q.deleteFriendRelationsByAccountIDStmt, err = db.PrepareContext(ctx, deleteFriendRelationsByAccountID); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteFriendRelationsByAccountID: %w", err)
+	}
+	if q.deleteSettingsByAccountIDStmt, err = db.PrepareContext(ctx, deleteSettingsByAccountID); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteSettingsByAccountID: %w", err)
+	}
 	if q.deleteUserStmt, err = db.PrepareContext(ctx, deleteUser); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteUser: %w", err)
 	}
@@ -68,6 +74,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.existsApplicationByIDWithLockStmt, err = db.PrepareContext(ctx, existsApplicationByIDWithLock); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistsApplicationByIDWithLock: %w", err)
+	}
+	if q.existsGroupLeaderByAccountIDWithLockStmt, err = db.PrepareContext(ctx, existsGroupLeaderByAccountIDWithLock); err != nil {
+		return nil, fmt.Errorf("error preparing query ExistsGroupLeaderByAccountIDWithLock: %w", err)
+	}
+	if q.existsSettingStmt, err = db.PrepareContext(ctx, existsSetting); err != nil {
+		return nil, fmt.Errorf("error preparing query ExistsSetting: %w", err)
 	}
 	if q.existsUserByIDStmt, err = db.PrepareContext(ctx, existsUserByID); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistsUserByID: %w", err)
@@ -93,6 +105,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getApplicationsStmt, err = db.PrepareContext(ctx, getApplications); err != nil {
 		return nil, fmt.Errorf("error preparing query GetApplications: %w", err)
 	}
+	if q.getFriendRelationIDsByAccountIDStmt, err = db.PrepareContext(ctx, getFriendRelationIDsByAccountID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetFriendRelationIDsByAccountID: %w", err)
+	}
 	if q.getFriendRelationIdByID1AndID1Stmt, err = db.PrepareContext(ctx, getFriendRelationIdByID1AndID1); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFriendRelationIdByID1AndID1: %w", err)
 	}
@@ -102,11 +117,32 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getMessageInfoTxStmt, err = db.PrepareContext(ctx, getMessageInfoTx); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMessageInfoTx: %w", err)
 	}
+	if q.getMsgsByContentStmt, err = db.PrepareContext(ctx, getMsgsByContent); err != nil {
+		return nil, fmt.Errorf("error preparing query GetMsgsByContent: %w", err)
+	}
+	if q.getMsgsByContentAndRelationStmt, err = db.PrepareContext(ctx, getMsgsByContentAndRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query GetMsgsByContentAndRelation: %w", err)
+	}
+	if q.getMsgsByRelationIDAndTimeStmt, err = db.PrepareContext(ctx, getMsgsByRelationIDAndTime); err != nil {
+		return nil, fmt.Errorf("error preparing query GetMsgsByRelationIDAndTime: %w", err)
+	}
+	if q.getPinMsgsByRelationIDStmt, err = db.PrepareContext(ctx, getPinMsgsByRelationID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetPinMsgsByRelationID: %w", err)
+	}
+	if q.getRelationIDsByAccountIDFromSettingsStmt, err = db.PrepareContext(ctx, getRelationIDsByAccountIDFromSettings); err != nil {
+		return nil, fmt.Errorf("error preparing query GetRelationIDsByAccountIDFromSettings: %w", err)
+	}
+	if q.getRlyMsgsInfoByMsgIDStmt, err = db.PrepareContext(ctx, getRlyMsgsInfoByMsgID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetRlyMsgsInfoByMsgID: %w", err)
+	}
 	if q.getUserByEmailStmt, err = db.PrepareContext(ctx, getUserByEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByEmail: %w", err)
 	}
 	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
+	}
+	if q.offerMsgsByAccountIDAndTimeStmt, err = db.PrepareContext(ctx, offerMsgsByAccountIDAndTime); err != nil {
+		return nil, fmt.Errorf("error preparing query OfferMsgsByAccountIDAndTime: %w", err)
 	}
 	if q.updateAccountStmt, err = db.PrepareContext(ctx, updateAccount); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateAccount: %w", err)
@@ -116,9 +152,6 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateApplicationStmt, err = db.PrepareContext(ctx, updateApplication); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateApplication: %w", err)
-	}
-	if q.updateMsgReadsStmt, err = db.PrepareContext(ctx, updateMsgReads); err != nil {
-		return nil, fmt.Errorf("error preparing query UpdateMsgReads: %w", err)
 	}
 	if q.updateUserStmt, err = db.PrepareContext(ctx, updateUser); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUser: %w", err)
@@ -178,6 +211,16 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteApplicationStmt: %w", cerr)
 		}
 	}
+	if q.deleteFriendRelationsByAccountIDStmt != nil {
+		if cerr := q.deleteFriendRelationsByAccountIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteFriendRelationsByAccountIDStmt: %w", cerr)
+		}
+	}
+	if q.deleteSettingsByAccountIDStmt != nil {
+		if cerr := q.deleteSettingsByAccountIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteSettingsByAccountIDStmt: %w", cerr)
+		}
+	}
 	if q.deleteUserStmt != nil {
 		if cerr := q.deleteUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteUserStmt: %w", cerr)
@@ -201,6 +244,16 @@ func (q *Queries) Close() error {
 	if q.existsApplicationByIDWithLockStmt != nil {
 		if cerr := q.existsApplicationByIDWithLockStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing existsApplicationByIDWithLockStmt: %w", cerr)
+		}
+	}
+	if q.existsGroupLeaderByAccountIDWithLockStmt != nil {
+		if cerr := q.existsGroupLeaderByAccountIDWithLockStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing existsGroupLeaderByAccountIDWithLockStmt: %w", cerr)
+		}
+	}
+	if q.existsSettingStmt != nil {
+		if cerr := q.existsSettingStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing existsSettingStmt: %w", cerr)
 		}
 	}
 	if q.existsUserByIDStmt != nil {
@@ -243,6 +296,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getApplicationsStmt: %w", cerr)
 		}
 	}
+	if q.getFriendRelationIDsByAccountIDStmt != nil {
+		if cerr := q.getFriendRelationIDsByAccountIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getFriendRelationIDsByAccountIDStmt: %w", cerr)
+		}
+	}
 	if q.getFriendRelationIdByID1AndID1Stmt != nil {
 		if cerr := q.getFriendRelationIdByID1AndID1Stmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getFriendRelationIdByID1AndID1Stmt: %w", cerr)
@@ -258,6 +316,36 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getMessageInfoTxStmt: %w", cerr)
 		}
 	}
+	if q.getMsgsByContentStmt != nil {
+		if cerr := q.getMsgsByContentStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getMsgsByContentStmt: %w", cerr)
+		}
+	}
+	if q.getMsgsByContentAndRelationStmt != nil {
+		if cerr := q.getMsgsByContentAndRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getMsgsByContentAndRelationStmt: %w", cerr)
+		}
+	}
+	if q.getMsgsByRelationIDAndTimeStmt != nil {
+		if cerr := q.getMsgsByRelationIDAndTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getMsgsByRelationIDAndTimeStmt: %w", cerr)
+		}
+	}
+	if q.getPinMsgsByRelationIDStmt != nil {
+		if cerr := q.getPinMsgsByRelationIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getPinMsgsByRelationIDStmt: %w", cerr)
+		}
+	}
+	if q.getRelationIDsByAccountIDFromSettingsStmt != nil {
+		if cerr := q.getRelationIDsByAccountIDFromSettingsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getRelationIDsByAccountIDFromSettingsStmt: %w", cerr)
+		}
+	}
+	if q.getRlyMsgsInfoByMsgIDStmt != nil {
+		if cerr := q.getRlyMsgsInfoByMsgIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getRlyMsgsInfoByMsgIDStmt: %w", cerr)
+		}
+	}
 	if q.getUserByEmailStmt != nil {
 		if cerr := q.getUserByEmailStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByEmailStmt: %w", cerr)
@@ -266,6 +354,11 @@ func (q *Queries) Close() error {
 	if q.getUserByIDStmt != nil {
 		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
+		}
+	}
+	if q.offerMsgsByAccountIDAndTimeStmt != nil {
+		if cerr := q.offerMsgsByAccountIDAndTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing offerMsgsByAccountIDAndTimeStmt: %w", cerr)
 		}
 	}
 	if q.updateAccountStmt != nil {
@@ -281,11 +374,6 @@ func (q *Queries) Close() error {
 	if q.updateApplicationStmt != nil {
 		if cerr := q.updateApplicationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateApplicationStmt: %w", cerr)
-		}
-	}
-	if q.updateMsgReadsStmt != nil {
-		if cerr := q.updateMsgReadsStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing updateMsgReadsStmt: %w", cerr)
 		}
 	}
 	if q.updateUserStmt != nil {
@@ -330,79 +418,101 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 }
 
 type Queries struct {
-	db                                 DBTX
-	tx                                 *sql.Tx
-	countAccountsByUserIDStmt          *sql.Stmt
-	createAccountStmt                  *sql.Stmt
-	createApplicationStmt              *sql.Stmt
-	createFriendRelationStmt           *sql.Stmt
-	createMessageStmt                  *sql.Stmt
-	createSettingStmt                  *sql.Stmt
-	createUserStmt                     *sql.Stmt
-	deleteAccountStmt                  *sql.Stmt
-	deleteAccountsByUserIDStmt         *sql.Stmt
-	deleteApplicationStmt              *sql.Stmt
-	deleteUserStmt                     *sql.Stmt
-	existEmailStmt                     *sql.Stmt
-	existsAccountByIDStmt              *sql.Stmt
-	existsAccountByNameAndUserIDStmt   *sql.Stmt
-	existsApplicationByIDWithLockStmt  *sql.Stmt
-	existsUserByIDStmt                 *sql.Stmt
-	getAccountByIDStmt                 *sql.Stmt
-	getAccountIDsByUserIDStmt          *sql.Stmt
-	getAccountsByNameStmt              *sql.Stmt
-	getAccountsByUserIDStmt            *sql.Stmt
-	getAllEmailStmt                    *sql.Stmt
-	getApplicationByIDStmt             *sql.Stmt
-	getApplicationsStmt                *sql.Stmt
-	getFriendRelationIdByID1AndID1Stmt *sql.Stmt
-	getMessageByIDStmt                 *sql.Stmt
-	getMessageInfoTxStmt               *sql.Stmt
-	getUserByEmailStmt                 *sql.Stmt
-	getUserByIDStmt                    *sql.Stmt
-	updateAccountStmt                  *sql.Stmt
-	updateAccountAvatarStmt            *sql.Stmt
-	updateApplicationStmt              *sql.Stmt
-	updateMsgReadsStmt                 *sql.Stmt
-	updateUserStmt                     *sql.Stmt
+	db                                        DBTX
+	tx                                        *sql.Tx
+	countAccountsByUserIDStmt                 *sql.Stmt
+	createAccountStmt                         *sql.Stmt
+	createApplicationStmt                     *sql.Stmt
+	createFriendRelationStmt                  *sql.Stmt
+	createMessageStmt                         *sql.Stmt
+	createSettingStmt                         *sql.Stmt
+	createUserStmt                            *sql.Stmt
+	deleteAccountStmt                         *sql.Stmt
+	deleteAccountsByUserIDStmt                *sql.Stmt
+	deleteApplicationStmt                     *sql.Stmt
+	deleteFriendRelationsByAccountIDStmt      *sql.Stmt
+	deleteSettingsByAccountIDStmt             *sql.Stmt
+	deleteUserStmt                            *sql.Stmt
+	existEmailStmt                            *sql.Stmt
+	existsAccountByIDStmt                     *sql.Stmt
+	existsAccountByNameAndUserIDStmt          *sql.Stmt
+	existsApplicationByIDWithLockStmt         *sql.Stmt
+	existsGroupLeaderByAccountIDWithLockStmt  *sql.Stmt
+	existsSettingStmt                         *sql.Stmt
+	existsUserByIDStmt                        *sql.Stmt
+	getAccountByIDStmt                        *sql.Stmt
+	getAccountIDsByUserIDStmt                 *sql.Stmt
+	getAccountsByNameStmt                     *sql.Stmt
+	getAccountsByUserIDStmt                   *sql.Stmt
+	getAllEmailStmt                           *sql.Stmt
+	getApplicationByIDStmt                    *sql.Stmt
+	getApplicationsStmt                       *sql.Stmt
+	getFriendRelationIDsByAccountIDStmt       *sql.Stmt
+	getFriendRelationIdByID1AndID1Stmt        *sql.Stmt
+	getMessageByIDStmt                        *sql.Stmt
+	getMessageInfoTxStmt                      *sql.Stmt
+	getMsgsByContentStmt                      *sql.Stmt
+	getMsgsByContentAndRelationStmt           *sql.Stmt
+	getMsgsByRelationIDAndTimeStmt            *sql.Stmt
+	getPinMsgsByRelationIDStmt                *sql.Stmt
+	getRelationIDsByAccountIDFromSettingsStmt *sql.Stmt
+	getRlyMsgsInfoByMsgIDStmt                 *sql.Stmt
+	getUserByEmailStmt                        *sql.Stmt
+	getUserByIDStmt                           *sql.Stmt
+	offerMsgsByAccountIDAndTimeStmt           *sql.Stmt
+	updateAccountStmt                         *sql.Stmt
+	updateAccountAvatarStmt                   *sql.Stmt
+	updateApplicationStmt                     *sql.Stmt
+	updateUserStmt                            *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                                 tx,
-		tx:                                 tx,
-		countAccountsByUserIDStmt:          q.countAccountsByUserIDStmt,
-		createAccountStmt:                  q.createAccountStmt,
-		createApplicationStmt:              q.createApplicationStmt,
-		createFriendRelationStmt:           q.createFriendRelationStmt,
-		createMessageStmt:                  q.createMessageStmt,
-		createSettingStmt:                  q.createSettingStmt,
-		createUserStmt:                     q.createUserStmt,
-		deleteAccountStmt:                  q.deleteAccountStmt,
-		deleteAccountsByUserIDStmt:         q.deleteAccountsByUserIDStmt,
-		deleteApplicationStmt:              q.deleteApplicationStmt,
-		deleteUserStmt:                     q.deleteUserStmt,
-		existEmailStmt:                     q.existEmailStmt,
-		existsAccountByIDStmt:              q.existsAccountByIDStmt,
-		existsAccountByNameAndUserIDStmt:   q.existsAccountByNameAndUserIDStmt,
-		existsApplicationByIDWithLockStmt:  q.existsApplicationByIDWithLockStmt,
-		existsUserByIDStmt:                 q.existsUserByIDStmt,
-		getAccountByIDStmt:                 q.getAccountByIDStmt,
-		getAccountIDsByUserIDStmt:          q.getAccountIDsByUserIDStmt,
-		getAccountsByNameStmt:              q.getAccountsByNameStmt,
-		getAccountsByUserIDStmt:            q.getAccountsByUserIDStmt,
-		getAllEmailStmt:                    q.getAllEmailStmt,
-		getApplicationByIDStmt:             q.getApplicationByIDStmt,
-		getApplicationsStmt:                q.getApplicationsStmt,
-		getFriendRelationIdByID1AndID1Stmt: q.getFriendRelationIdByID1AndID1Stmt,
-		getMessageByIDStmt:                 q.getMessageByIDStmt,
-		getMessageInfoTxStmt:               q.getMessageInfoTxStmt,
-		getUserByEmailStmt:                 q.getUserByEmailStmt,
-		getUserByIDStmt:                    q.getUserByIDStmt,
-		updateAccountStmt:                  q.updateAccountStmt,
-		updateAccountAvatarStmt:            q.updateAccountAvatarStmt,
-		updateApplicationStmt:              q.updateApplicationStmt,
-		updateMsgReadsStmt:                 q.updateMsgReadsStmt,
-		updateUserStmt:                     q.updateUserStmt,
+		db:                                        tx,
+		tx:                                        tx,
+		countAccountsByUserIDStmt:                 q.countAccountsByUserIDStmt,
+		createAccountStmt:                         q.createAccountStmt,
+		createApplicationStmt:                     q.createApplicationStmt,
+		createFriendRelationStmt:                  q.createFriendRelationStmt,
+		createMessageStmt:                         q.createMessageStmt,
+		createSettingStmt:                         q.createSettingStmt,
+		createUserStmt:                            q.createUserStmt,
+		deleteAccountStmt:                         q.deleteAccountStmt,
+		deleteAccountsByUserIDStmt:                q.deleteAccountsByUserIDStmt,
+		deleteApplicationStmt:                     q.deleteApplicationStmt,
+		deleteFriendRelationsByAccountIDStmt:      q.deleteFriendRelationsByAccountIDStmt,
+		deleteSettingsByAccountIDStmt:             q.deleteSettingsByAccountIDStmt,
+		deleteUserStmt:                            q.deleteUserStmt,
+		existEmailStmt:                            q.existEmailStmt,
+		existsAccountByIDStmt:                     q.existsAccountByIDStmt,
+		existsAccountByNameAndUserIDStmt:          q.existsAccountByNameAndUserIDStmt,
+		existsApplicationByIDWithLockStmt:         q.existsApplicationByIDWithLockStmt,
+		existsGroupLeaderByAccountIDWithLockStmt:  q.existsGroupLeaderByAccountIDWithLockStmt,
+		existsSettingStmt:                         q.existsSettingStmt,
+		existsUserByIDStmt:                        q.existsUserByIDStmt,
+		getAccountByIDStmt:                        q.getAccountByIDStmt,
+		getAccountIDsByUserIDStmt:                 q.getAccountIDsByUserIDStmt,
+		getAccountsByNameStmt:                     q.getAccountsByNameStmt,
+		getAccountsByUserIDStmt:                   q.getAccountsByUserIDStmt,
+		getAllEmailStmt:                           q.getAllEmailStmt,
+		getApplicationByIDStmt:                    q.getApplicationByIDStmt,
+		getApplicationsStmt:                       q.getApplicationsStmt,
+		getFriendRelationIDsByAccountIDStmt:       q.getFriendRelationIDsByAccountIDStmt,
+		getFriendRelationIdByID1AndID1Stmt:        q.getFriendRelationIdByID1AndID1Stmt,
+		getMessageByIDStmt:                        q.getMessageByIDStmt,
+		getMessageInfoTxStmt:                      q.getMessageInfoTxStmt,
+		getMsgsByContentStmt:                      q.getMsgsByContentStmt,
+		getMsgsByContentAndRelationStmt:           q.getMsgsByContentAndRelationStmt,
+		getMsgsByRelationIDAndTimeStmt:            q.getMsgsByRelationIDAndTimeStmt,
+		getPinMsgsByRelationIDStmt:                q.getPinMsgsByRelationIDStmt,
+		getRelationIDsByAccountIDFromSettingsStmt: q.getRelationIDsByAccountIDFromSettingsStmt,
+		getRlyMsgsInfoByMsgIDStmt:                 q.getRlyMsgsInfoByMsgIDStmt,
+		getUserByEmailStmt:                        q.getUserByEmailStmt,
+		getUserByIDStmt:                           q.getUserByIDStmt,
+		offerMsgsByAccountIDAndTimeStmt:           q.offerMsgsByAccountIDAndTimeStmt,
+		updateAccountStmt:                         q.updateAccountStmt,
+		updateAccountAvatarStmt:                   q.updateAccountAvatarStmt,
+		updateApplicationStmt:                     q.updateApplicationStmt,
+		updateUserStmt:                            q.updateUserStmt,
 	}
 }

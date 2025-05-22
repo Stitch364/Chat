@@ -73,3 +73,4 @@ from (select id, name, avatar, gender from accounts where accounts.name like CON
                                    ((r.account1_id = a.id and r.account2_id = ?) or
                                     (r.account1_id = ? and r.account2_id = a.id)))
 limit ? offset ?;
+

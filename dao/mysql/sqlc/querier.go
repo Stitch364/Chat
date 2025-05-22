@@ -16,6 +16,7 @@ type Querier interface {
 	// {account1_id:int64,account2_id:int64,apply_msg:string}
 	CreateApplication(ctx context.Context, arg *CreateApplicationParams) error
 	CreateFriendRelation(ctx context.Context, arg *CreateFriendRelationParams) error
+	// {notify_type:string,msg_type:string}
 	CreateMessage(ctx context.Context, arg *CreateMessageParams) error
 	CreateSetting(ctx context.Context, arg *CreateSettingParams) error
 	// {email:string,password:string}
@@ -26,6 +27,8 @@ type Querier interface {
 	DeleteAccountsByUserID(ctx context.Context, userID int64) error
 	// {account1_id:int64,account2_id:int64}
 	DeleteApplication(ctx context.Context, arg *DeleteApplicationParams) error
+	DeleteFriendRelationsByAccountID(ctx context.Context, arg *DeleteFriendRelationsByAccountIDParams) error
+	DeleteSettingsByAccountID(ctx context.Context, accountID int64) error
 	// {id:int64}
 	DeleteUser(ctx context.Context, id int64) error
 	// {email:string}
@@ -36,6 +39,8 @@ type Querier interface {
 	ExistsAccountByNameAndUserID(ctx context.Context, arg *ExistsAccountByNameAndUserIDParams) (bool, error)
 	// {account1_id:int64,account2_id:int64}
 	ExistsApplicationByIDWithLock(ctx context.Context, arg *ExistsApplicationByIDWithLockParams) (bool, error)
+	ExistsGroupLeaderByAccountIDWithLock(ctx context.Context, accountID int64) (bool, error)
+	ExistsSetting(ctx context.Context, arg *ExistsSettingParams) (bool, error)
 	// {id:int64}
 	ExistsUserByID(ctx context.Context, id int64) (bool, error)
 	// {accounts.id:int64, r.account2_id:int64, r.account1_id:int64}
@@ -51,20 +56,27 @@ type Querier interface {
 	GetApplicationByID(ctx context.Context, arg *GetApplicationByIDParams) (*Application, error)
 	// {account1_id:int64,account2_id:int64,limit:int32,offset:int32,total:int64}
 	GetApplications(ctx context.Context, arg *GetApplicationsParams) ([]*GetApplicationsRow, error)
+	GetFriendRelationIDsByAccountID(ctx context.Context, arg *GetFriendRelationIDsByAccountIDParams) ([]int64, error)
 	GetFriendRelationIdByID1AndID1(ctx context.Context, arg *GetFriendRelationIdByID1AndID1Params) (int64, error)
 	GetMessageByID(ctx context.Context, id int64) (*Message, error)
 	GetMessageInfoTx(ctx context.Context) (*GetMessageInfoTxRow, error)
+	GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentParams) ([]*GetMsgsByContentRow, error)
+	GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsByContentAndRelationParams) ([]*GetMsgsByContentAndRelationRow, error)
+	GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsByRelationIDAndTimeParams) ([]*GetMsgsByRelationIDAndTimeRow, error)
+	GetPinMsgsByRelationID(ctx context.Context, arg *GetPinMsgsByRelationIDParams) ([]*GetPinMsgsByRelationIDRow, error)
+	GetRelationIDsByAccountIDFromSettings(ctx context.Context, accountID int64) ([]int64, error)
+	GetRlyMsgsInfoByMsgID(ctx context.Context, arg *GetRlyMsgsInfoByMsgIDParams) ([]*GetRlyMsgsInfoByMsgIDRow, error)
 	// {email:string}
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	// {id:int64}
 	GetUserByID(ctx context.Context, id int64) (*User, error)
+	OfferMsgsByAccountIDAndTime(ctx context.Context, arg *OfferMsgsByAccountIDAndTimeParams) ([]*OfferMsgsByAccountIDAndTimeRow, error)
 	// {id:int64, name:string, gender:string, signature:string}
 	UpdateAccount(ctx context.Context, arg *UpdateAccountParams) error
 	// {id:int64, avatar:string}
 	UpdateAccountAvatar(ctx context.Context, arg *UpdateAccountAvatarParams) error
 	// {status:string,refuse_msg:string,account1_id:int64,account2_id:int64}
 	UpdateApplication(ctx context.Context, arg *UpdateApplicationParams) error
-	UpdateMsgReads(ctx context.Context, relationID int64) error
 	UpdateUser(ctx context.Context, arg *UpdateUserParams) error
 }
 

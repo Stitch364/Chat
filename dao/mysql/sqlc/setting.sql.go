@@ -30,3 +30,70 @@ func (q *Queries) CreateSetting(ctx context.Context, arg *CreateSettingParams) e
 	)
 	return err
 }
+
+const deleteSettingsByAccountID = `-- name: DeleteSettingsByAccountID :exec
+delete
+from settings
+where account_id = ?
+`
+
+func (q *Queries) DeleteSettingsByAccountID(ctx context.Context, accountID int64) error {
+	_, err := q.exec(ctx, q.deleteSettingsByAccountIDStmt, deleteSettingsByAccountID, accountID)
+	return err
+}
+
+const existsGroupLeaderByAccountIDWithLock = `-- name: ExistsGroupLeaderByAccountIDWithLock :one
+select exists(select 1 from settings where account_id = ? and is_leader = true) for update
+`
+
+func (q *Queries) ExistsGroupLeaderByAccountIDWithLock(ctx context.Context, accountID int64) (bool, error) {
+	row := q.queryRow(ctx, q.existsGroupLeaderByAccountIDWithLockStmt, existsGroupLeaderByAccountIDWithLock, accountID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const existsSetting = `-- name: ExistsSetting :one
+select exists(select 1 from settings where account_id = ? and relation_id = ?)
+`
+
+type ExistsSettingParams struct {
+	AccountID  int64
+	RelationID int64
+}
+
+func (q *Queries) ExistsSetting(ctx context.Context, arg *ExistsSettingParams) (bool, error) {
+	row := q.queryRow(ctx, q.existsSettingStmt, existsSetting, arg.AccountID, arg.RelationID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const getRelationIDsByAccountIDFromSettings = `-- name: GetRelationIDsByAccountIDFromSettings :many
+select relation_id
+from settings
+where account_id = ?
+`
+
+func (q *Queries) GetRelationIDsByAccountIDFromSettings(ctx context.Context, accountID int64) ([]int64, error) {
+	rows, err := q.query(ctx, q.getRelationIDsByAccountIDFromSettingsStmt, getRelationIDsByAccountIDFromSettings, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var relation_id int64
+		if err := rows.Scan(&relation_id); err != nil {
+			return nil, err
+		}
+		items = append(items, relation_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

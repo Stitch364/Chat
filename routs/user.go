@@ -17,8 +17,8 @@ func (user) Init(router *gin.RouterGroup) {
 		r.POST("/login", api.Apis.User.Login)
 		updateGroup := r.Group("update").Use(middlewares.MustUser()) //添加鉴权中间件
 		{
-			updateGroup.PUT("pwd", api.Apis.User.UpdateUserPassword)
-			updateGroup.PUT("email", api.Apis.User.UpdateUserEmail)
+			updateGroup.POST("pwd", api.Apis.User.UpdateUserPassword)
+			updateGroup.POST("email", api.Apis.User.UpdateUserEmail)
 			updateGroup.GET("/logout", api.Apis.User.Logout)
 		}
 

@@ -1,11 +1,9 @@
 package request
 
-import "chat/model/common"
-
 type ParamCreateAccount struct {
 	Name      string `json:"name" binding:"required,gte=1,lte=20"`
 	Gender    string `json:"gender" binding:"required,oneof= 男 女 未知 "`
-	Signature string `json:"signature" binding:"required,gte=0,lte=100"`
+	Signature string `json:"signature" binding:"omitempty,gte=0,lte=100"`
 }
 
 type ParamGetAccountToken struct {
@@ -23,8 +21,8 @@ type ParamUpdateAccount struct {
 }
 
 type ParamGetAccountsByName struct {
-	Name        string `json:"name" form:"name" binding:"required,gte=1,lte=20"` // 搜索名称
-	common.Page        // 分页
+	Name string `json:"name" form:"name" binding:"required,gte=1,lte=20"` // 搜索名称
+	//common.Page        // 分页
 }
 
 type ParamGetAccountByID struct {

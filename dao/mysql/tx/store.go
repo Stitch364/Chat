@@ -16,6 +16,7 @@ type TXer interface {
 	DeleteAccountWithTx(ctx context.Context, rdb *operate.RDB, accountID int64) error
 	CreateApplicationTx(ctx context.Context, params *db.CreateApplicationParams) error
 	AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow) (*db.Message, error)
+	CreateMessageTx(ctx context.Context, params *db.CreateMessageParams) (*db.GetMessageInfoTxRow, error)
 }
 
 // MySQLDB 实现了 DB 接口

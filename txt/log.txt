@@ -121,8 +121,40 @@ tips: 模糊查询不能用 '%name%' 要防止SQL注入
 
 5/5 周一 扬尘
 
+5/7 周三 扬尘
+    1.开始写发送消息。要写的很多。
+
+5/8 周四 多云
+    蓝桥国赛训练考试1
+
+5/11 周日 晴
+    继续写sendmessage
+
+5/12 周一 晴
+    和前端测试application和account的部分接口
+
+5/13 周二 晴
+    完成messger部分的前期工作，包括发消息等，后面需要引入MQ
+
+5/14 周三 晴
+    蓝桥国赛训练考试2
+
+5/15 周四 晴
+    测试接口
+
+5/19 周一 晴
+    1.测试接口
+    2.完成了查消息的三个接口
+
+5/20 周二 晴
+    实验课到8.30
+    修改了5/19日遇到的Bug，修改了分页部分
+    
 
 
-写到了Tx 下的 AcceptApplicationTx ，前面是AcceptApplication
+写到了 E:\Program Files\GO\my_chat\chat\message.go
 
-再写message的sqlc
+写到了
+    manager\chat
+    E:\Program Files\GO\my_chat\task\message.go
+    E:\Program Files\GO\my_chat\chat\message.go

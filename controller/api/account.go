@@ -7,6 +7,7 @@ import (
 	"chat/middlewares"
 	"chat/model"
 	"chat/model/request"
+	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
@@ -65,15 +66,19 @@ func (account) DeleteAccount(ctx *gin.Context) {
 	reply := app.NewResponse(ctx)
 	params := new(request.ParamDeleteAccount)
 	if err := ctx.ShouldBind(params); err != nil {
+		fmt.Println(err)
+		fmt.Println(params.AccountID)
 		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
 		return
 	}
+	//fmt.Println("1 on ctrl")
 	//获取UserToken信息
 	content, ok := middlewares.GetTokenContent(ctx)
 	if !ok && content.TokenType != model.UserToken {
 		reply.Reply(errcodes.AuthNotExist)
 		return
 	}
+	//fmt.Println("2 on ctrl")
 	//2.业务处理
 	err := logic.Logics.Account.DeleteAccount(ctx, content.ID, params.AccountID)
 

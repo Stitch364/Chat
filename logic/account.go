@@ -12,6 +12,7 @@ import (
 	"chat/model/reply"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4"
@@ -105,6 +106,7 @@ func getAccountInfoByID(ctx *gin.Context, accountID, selfID int64) (*db.GetAccou
 
 func (account) DeleteAccount(ctx *gin.Context, userID, accountID int64) errcode.Err {
 	//用账号ID获取账号信息
+	fmt.Println("000 on logic")
 	accountInfo, myerr := getAccountInfoByID(ctx, accountID, accountID)
 	if myerr != nil {
 		return myerr
@@ -180,13 +182,15 @@ func (account) UpdateAccount(ctx *gin.Context, accountID int64, name, gender, si
 		return errcode.ErrServer
 	}
 	//获取Token
-
+	//accessToken, _ := middlewares.GetToken(ctx.Request.Header)
 	//推送更新消息
 
 	return nil
 }
 
 func (account) GetAccountsByName(ctx *gin.Context, accountID int64, name string, limit, offset int32) (*reply.ParamGetAccountsByName, errcode.Err) {
+	var Total int64
+	var pageTotal int64
 	accounts, err := dao.Database.DB.GetAccountsByName(ctx, &db.GetAccountsByNameParams{
 		CONCAT: name,
 		Account2ID: sql.NullInt64{
@@ -204,6 +208,10 @@ func (account) GetAccountsByName(ctx *gin.Context, accountID int64, name string,
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return nil, errcode.ErrServer
 	}
+	if len(accounts) == 0 {
+		return &reply.ParamGetAccountsByName{List: []*reply.ParamFriendInfo{}}, nil
+	}
+
 	//类型转换
 	accountInfos := make([]*reply.ParamFriendInfo, len(accounts))
 	for i, account := range accounts {
@@ -217,8 +225,17 @@ func (account) GetAccountsByName(ctx *gin.Context, accountID int64, name string,
 			RelationID: account.RelationID.Int64,
 		}
 	}
+
+	Int64limit := int64(limit)
+	Total = accounts[0].Total.(int64)
+	if Total%Int64limit == 0 {
+		pageTotal = Total / Int64limit
+	} else {
+		pageTotal = Total/Int64limit + 1
+	}
+
 	return &reply.ParamGetAccountsByName{
 		List:  accountInfos,
-		Total: int64(len(accountInfos)),
+		Total: pageTotal,
 	}, nil
 }

@@ -5,6 +5,8 @@ type logics struct {
 	Email       email
 	Account     account
 	Application application
+	Message     message
+	Setting     setting
 }
 
 var Logics = new(logics)

@@ -103,9 +103,9 @@ create table messages
     create_at timestamp not null default now(), -- 创建时间
     is_revoke boolean not null default false, -- 是否撤回
     is_top boolean not null default false, -- 是否置顶
-    is_pin boolean not null default false, -- 是否pin
+    is_pin boolean not null default false, -- 是否pin(将消息固定在会话顶部)
     pin_time timestamp not null default now(), -- pin时间
-    read_ids json not null default json_array(), -- 已读用户 id 集合 默认是空的json数组
+    read_ids json, -- 已读用户 id 集合 默认是空的json数组
     #msg_content_tsy tsvector, -- 消息分词
     check (notify_type = 'common' or (notify_type = 'system' and account_id is null)), -- 系统消息时发送账号 id 为 null
     check (msg_type = 'text' or (msg_type = 'file' and file_id is not null)) -- 文件消息时文件 id 不能为 null
@@ -123,7 +123,7 @@ create table group_notify
     msg_expand json, -- 消息扩展信息
     account_id bigint references accounts (id) on delete cascade on update cascade, -- 发送账号 id（外键）
     create_at timestamp not null default now(), -- 创建时间
-    read_ids json not null default json_array() -- 已读用户 id 集合
+    read_ids json -- 已读用户 id 集合
     #msg_content_tsv tsvector -- 消息分词
 );
 
