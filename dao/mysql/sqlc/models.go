@@ -61,6 +61,7 @@ const (
 	ApplicationsStatusValue0 ApplicationsStatus = "已申请"
 	ApplicationsStatusValue1 ApplicationsStatus = "已同意"
 	ApplicationsStatusValue2 ApplicationsStatus = "已拒绝"
+	ApplicationsStatusValue3 ApplicationsStatus = "等待验证"
 )
 
 func (e *ApplicationsStatus) Scan(src interface{}) error {

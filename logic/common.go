@@ -3,10 +3,20 @@ package logic
 import (
 	"chat/global"
 	"chat/model"
+	"chat/pkg/retry"
 	"github.com/XYYSWK/Lutils/pkg/token"
 	"github.com/gin-gonic/gin"
 	"time"
 )
+
+// 尝试重试
+// 失败：打印日志
+func reTry(name string, f func() error) {
+	go func() {
+		report := <-retry.NewTry(name, f, global.PublicSetting.Auto.Retry.Duration, global.PublicSetting.Auto.Retry.MaxTimes).Run()
+		global.Logger.Error(report.Error())
+	}()
+}
 
 // newAccountToken token
 // 成功：返回 token，*token.Payload

@@ -7,12 +7,18 @@ import (
 	"chat/global"
 	"chat/middlewares"
 	"chat/model"
+	"chat/model/chat/server"
+	"chat/model/format"
 	"chat/model/reply"
+	"chat/model/request"
+	"chat/task"
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 )
 
@@ -295,7 +301,6 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 			RelationID: relationID,
 			AccountID:  accountID,
 			CONCAT:     content,
-			CONCAT_2:   content,
 			Limit:      limit,
 			Offset:     offset,
 		})
@@ -305,7 +310,6 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 	data, myErr := dao.Database.DB.GetMsgsByContent(ctx, &db.GetMsgsByContentParams{
 		AccountID: accountID,
 		CONCAT:    content,
-		CONCAT_2:  content,
 		Limit:     limit,
 		Offset:    offset,
 	})
@@ -341,6 +345,199 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 		List:  result,
 		Total: TotalToPageTotal(data[0].Total.(int64), limit),
 	}, nil
+}
+
+func (message) UpdateMsgPin(ctx *gin.Context, accountID int64, params *request.ParamUpdateMsgPin) errcode.Err {
+	ok, err := ExistsSetting(ctx, accountID, params.RelationID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errcodes.AuthPermissionsInsufficient
+	}
+	msgInfo, err := GetMsgInfoByID(ctx, params.ID)
+	if err != nil {
+		return err
+	}
+	if msgInfo.IsPin == params.IsPin {
+		return nil
+	}
+	myErr := dao.Database.DB.UpdateMsgPin(ctx, &db.UpdateMsgPinParams{
+		ID:    params.ID,
+		IsPin: params.IsPin,
+	})
+	if myErr != nil {
+		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
+		return errcode.ErrServer
+	}
+	// 推送 pin 通知
+	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
+	global.Worker.SendTask(task.UpdateMsgState(accessToken, params.RelationID, params.ID, server.MsgPin, params.IsPin))
+	return nil
+}
+
+func (message) UpdateMsgTop(ctx *gin.Context, accountID int64, params *request.ParamUpdateMsgTop) errcode.Err {
+	//权限验证
+	ok, err := ExistsSetting(ctx, accountID, params.RelationID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errcodes.AuthPermissionsInsufficient
+	}
+	msgInfo, err := GetMsgInfoByID(ctx, params.ID)
+	if err != nil {
+		return err
+	}
+	if msgInfo.IsTop == params.IsTop {
+		return nil
+	}
+	myErr := dao.Database.DB.UpdateMsgTop(ctx, &db.UpdateMsgTopParams{
+		ID:    params.ID,
+		IsTop: params.IsTop,
+	})
+	if myErr != nil {
+		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
+		return errcode.ErrServer
+	}
+	// 推送 置顶 消息
+	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
+	global.Worker.SendTask(task.UpdateMsgState(accessToken, params.RelationID, params.ID, server.MsgTop, params.IsTop))
+	// 创建并推送 top 消息
+	f := func() error {
+		arg := &db.CreateMessageParams{
+			NotifyType: db.MessagesNotifyTypeSystem,
+			MsgType:    db.MessagesMsgType(model.MsgTypeText),
+			MsgContent: fmt.Sprintf(format.TopMessage, accountID),
+			//MsgExtend:  json.RawMessage{},
+			RelationID: msgInfo.RelationID,
+		}
+		msgRly, err := dao.Database.DB.CreateMessageTx(ctx, arg)
+		if err != nil {
+			return err
+		}
+		global.Worker.SendTask(task.PublishMsg(reply.ParamMsgInfoWithRly{
+			ParamMsgInfo: reply.ParamMsgInfo{
+				ID:         msgRly.ID,
+				NotifyType: string(arg.NotifyType),
+				MsgType:    string(arg.MsgType),
+				MsgContent: arg.MsgContent,
+				RelationID: arg.RelationID,
+				CreateAt:   msgRly.CreateAt,
+			},
+			RlyMsg: nil,
+		}))
+		return nil
+	}
+	if err := f(); err != nil {
+		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+		reTry("UpdateMsgTop", f)
+	}
+	return nil
+}
+
+func (message) RevokeMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
+	msgInfo, err := GetMsgInfoByID(ctx, msgID)
+	if err != nil {
+		return err
+	}
+	// 检查权限(是不是本人)
+	if msgInfo.AccountID.Int64 != accountID {
+		return errcodes.AuthPermissionsInsufficient
+	}
+	if msgInfo.IsRevoke {
+		return errcodes.MsgAlreadyRevoke
+	}
+	myErr := dao.Database.DB.RevokeMsgWithTx(ctx, msgID, msgInfo.IsPin, msgInfo.IsTop)
+	if myErr != nil {
+		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
+		return errcode.ErrServer
+	}
+	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
+	global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.RelationID, msgID, server.MsgRevoke, true))
+	if msgInfo.IsTop {
+		// 推送 top 通知
+		global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.RelationID, msgID, server.MsgTop, false))
+		// 创建并推送 top 消息
+		f := func() error {
+			arg := &db.CreateMessageParams{
+				NotifyType: db.MessagesNotifyTypeSystem,
+				MsgType:    db.MessagesMsgType(model.MsgTypeText),
+				MsgContent: fmt.Sprintf(format.UnTopMessage, accountID),
+				//MsgExtend:  json.RawMessage{},
+				RelationID: msgInfo.RelationID,
+			}
+			msgRly, err := dao.Database.DB.CreateMessageTx(ctx, arg)
+			if err != nil {
+				return err
+			}
+			global.Worker.SendTask(task.PublishMsg(reply.ParamMsgInfoWithRly{
+				ParamMsgInfo: reply.ParamMsgInfo{
+					ID:         msgRly.ID,
+					NotifyType: string(arg.NotifyType),
+					MsgType:    string(arg.MsgType),
+					MsgContent: arg.MsgContent,
+					RelationID: arg.RelationID,
+					CreateAt:   msgRly.CreateAt,
+				},
+				RlyMsg: nil,
+			}))
+			return nil
+		}
+		if err := f(); err != nil {
+			global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+			reTry("RevokeMsg", f)
+		}
+	}
+	return nil
+}
+
+func (message) GetTopMsgByRelationID(ctx *gin.Context, accountID, relationID int64) (*reply.ParamGetTopMsgByRelationID, errcode.Err) {
+	ok, err := ExistsSetting(ctx, accountID, relationID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errcodes.AuthPermissionsInsufficient
+	}
+	data, myErr := dao.Database.DB.GetTopMsgByRelationID(ctx, &db.GetTopMsgByRelationIDParams{
+		RelationID:   relationID,
+		RelationID_2: relationID,
+	})
+	if myErr != nil {
+		if errors.Is(myErr, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
+		return nil, errcode.ErrServer
+	}
+	var content string
+	var extend *model.MsgExtend
+	if !data.IsRevoke {
+		content = data.MsgContent
+		extend, myErr = model.JsonToExtend(data.MsgExtend)
+		if myErr != nil {
+			global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
+			return nil, errcode.ErrServer
+		}
+	}
+
+	return &reply.ParamGetTopMsgByRelationID{MsgInfo: reply.ParamMsgInfo{
+		ID:         data.ID,
+		NotifyType: string(data.NotifyType),
+		MsgType:    string(data.MsgType),
+		MsgContent: content,
+		MsgExtend:  extend,
+		FileID:     data.FileID.Int64,
+		AccountID:  data.AccountID.Int64,
+		RelationID: data.RelationID,
+		CreateAt:   data.CreateAt,
+		IsRevoke:   data.IsRevoke,
+		IsTop:      data.IsTop,
+		IsPin:      data.IsPin,
+		PinTime:    data.PinTime,
+		ReplyCount: data.ReplyCount,
+	}}, nil
 }
 
 func TotalToPageTotal(total int64, limit int32) int64 {

@@ -9,6 +9,8 @@ type group struct {
 	Worker     worker
 	TokenMaker tokenMaker
 	GenerateID generateID
+	Chat       chat
+	Load       load
 }
 
 var Group = new(group)
@@ -23,4 +25,6 @@ func Inits() {
 	Group.Worker.Init()
 	Group.TokenMaker.Init()
 	Group.GenerateID.Init()
+	Group.Chat.Init()
+	Group.Load.Init()
 }

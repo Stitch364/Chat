@@ -36,7 +36,7 @@ type PrivateConfig struct {
 	Email Email       `yaml:"Email"`
 	Token Token       `yaml:"Token"`
 	//HuaWeiOBS  HuaWeiOBS        `yaml:"HuaWeiOBS"`
-	//RocketMQ   RocketMQ         `yaml:"RocketMQ"`
+	RocketMQ RocketMQ `yaml:"RocketMQ"`
 }
 
 type LogConfig struct {
@@ -144,4 +144,9 @@ type Worker struct {
 	TaskChanCapacity   int `yaml:"TaskChanCapacity"`   // 任务队列容量
 	WorkerChanCapacity int `yaml:"WorkerChanCapacity"` // 工作队列容量
 	WorkerNum          int `yaml:"WorkerNum"`          // 工作池数
+}
+
+type RocketMQ struct {
+	Addr string `yaml:"Addr"` // RocketMQ 服务的地址
+	Port int    `yaml:"Port"` // RocketMQ 服务的端口号
 }

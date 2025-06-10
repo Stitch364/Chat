@@ -16,14 +16,13 @@ const createMessage = `-- name: CreateMessage :exec
 insert into messages
 (notify_type, msg_type, msg_content, msg_extend, file_id, account_id, rly_msg_id, relation_id)
 values
-(?,?,?,?,?,?,?,?)
+(?,?,?,JSON_ARRAY(),?,?,?,?)
 `
 
 type CreateMessageParams struct {
 	NotifyType MessagesNotifyType
 	MsgType    MessagesMsgType
 	MsgContent string
-	MsgExtend  json.RawMessage
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
 	RlyMsgID   sql.NullInt64
@@ -36,7 +35,6 @@ func (q *Queries) CreateMessage(ctx context.Context, arg *CreateMessageParams) e
 		arg.NotifyType,
 		arg.MsgType,
 		arg.MsgContent,
-		arg.MsgExtend,
 		arg.FileID,
 		arg.AccountID,
 		arg.RlyMsgID,
@@ -46,7 +44,7 @@ func (q *Queries) CreateMessage(ctx context.Context, arg *CreateMessageParams) e
 }
 
 const getMessageByID = `-- name: GetMessageByID :one
-select id, notify_type, msg_type, msg_content, msg_extend, file_id, account_id,
+select id, notify_type, msg_type, msg_content, coalesce(msg_extend,'{}'), file_id, account_id,
        rly_msg_id, relation_id, create_at, is_revoke, is_top, is_pin, pin_time, read_ids
 from messages
 where id = ?
@@ -108,7 +106,7 @@ select m1.id,
        m1.notify_type,
        m1.msg_type,
        m1.msg_content,
-       m1.msg_extend,
+       coalesce(m1.msg_extend,'{}'),
        m1.file_id,
        m1.account_id,
        m1.relation_id,
@@ -117,7 +115,7 @@ select m1.id,
 from messages m1
          join settings s on m1.relation_id = s.relation_id and s.account_id = ?
 where (not is_revoke)
-    and (m1.msg_content like concat('%', ?, '%') or m1.msg_extend like concat('%', ?, '%'))
+    and m1.msg_content like concat('%', ?, '%')
 order by m1.create_at desc
     limit ? offset ?
 `
@@ -125,7 +123,6 @@ order by m1.create_at desc
 type GetMsgsByContentParams struct {
 	AccountID int64
 	CONCAT    interface{}
-	CONCAT_2  interface{}
 	Limit     int32
 	Offset    int32
 }
@@ -147,7 +144,6 @@ func (q *Queries) GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentPar
 	rows, err := q.query(ctx, q.getMsgsByContentStmt, getMsgsByContent,
 		arg.AccountID,
 		arg.CONCAT,
-		arg.CONCAT_2,
 		arg.Limit,
 		arg.Offset,
 	)
@@ -188,7 +184,7 @@ select m1.id,
        m1.notify_type,
        m1.msg_type,
        m1.msg_content,
-       m1.msg_extend,
+       coalesce(m1.msg_extend,'{}'),
        m1.file_id,
        m1.account_id,
        m1.relation_id,
@@ -197,7 +193,7 @@ select m1.id,
 from messages m1
          join settings s on m1.relation_id = ? and m1.relation_id = s.relation_id and s.account_id = ?
 where (not is_revoke)
-  and (m1.msg_content like concat('%', ?, '%') or m1.msg_extend like concat('%', ?, '%'))
+  and m1.msg_content like concat('%', ?, '%')
 order by m1.create_at desc
 limit ? offset ?
 `
@@ -206,7 +202,6 @@ type GetMsgsByContentAndRelationParams struct {
 	RelationID int64
 	AccountID  int64
 	CONCAT     interface{}
-	CONCAT_2   interface{}
 	Limit      int32
 	Offset     int32
 }
@@ -229,7 +224,6 @@ func (q *Queries) GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsB
 		arg.RelationID,
 		arg.AccountID,
 		arg.CONCAT,
-		arg.CONCAT_2,
 		arg.Limit,
 		arg.Offset,
 	)
@@ -270,7 +264,7 @@ select m1.id,
        m1.notify_type,
        m1.msg_type,
        m1.msg_content,
-       m1.msg_extend,
+       coalesce(m1.msg_extend,'{}'),
        m1.file_id,
        m1.account_id,
        m1.rly_msg_id,
@@ -370,7 +364,7 @@ select m1.id,
        m1.notify_type,
        m1.msg_type,
        m1.msg_content,
-       m1.msg_extend,
+       coalesce(m1.msg_extend,'{}'),
        m1.file_id,
        m1.account_id,
        m1.relation_id,
@@ -464,7 +458,7 @@ select m1.id,
        m1.notify_type,
        m1.msg_type,
        m1.msg_content,
-       m1.msg_extend,
+       coalesce(m1.msg_extend,'{}'),
        m1.file_id,
        m1.account_id,
        m1.relation_id,
@@ -555,12 +549,82 @@ func (q *Queries) GetRlyMsgsInfoByMsgID(ctx context.Context, arg *GetRlyMsgsInfo
 	return items, nil
 }
 
+const getTopMsgByRelationID = `-- name: GetTopMsgByRelationID :one
+select m1.id,
+       m1.notify_type,
+       m1.msg_type,
+       m1.msg_content,
+       coalesce(m1.msg_extend,'{}'),
+       m1.file_id,
+       m1.account_id,
+       m1.relation_id,
+       m1.create_at,
+       m1.is_revoke,
+       m1.is_top,
+       m1.is_pin,
+       m1.pin_time,
+       m1.read_ids,
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
+       count(*) over () as total
+from messages m1
+where m1.relation_id = ? and m1.is_top = true
+limit 1
+`
+
+type GetTopMsgByRelationIDParams struct {
+	RelationID   int64
+	RelationID_2 int64
+}
+
+type GetTopMsgByRelationIDRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	IsRevoke   bool
+	IsTop      bool
+	IsPin      bool
+	PinTime    time.Time
+	ReadIds    json.RawMessage
+	ReplyCount int64
+	Total      interface{}
+}
+
+func (q *Queries) GetTopMsgByRelationID(ctx context.Context, arg *GetTopMsgByRelationIDParams) (*GetTopMsgByRelationIDRow, error) {
+	row := q.queryRow(ctx, q.getTopMsgByRelationIDStmt, getTopMsgByRelationID, arg.RelationID, arg.RelationID_2)
+	var i GetTopMsgByRelationIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.NotifyType,
+		&i.MsgType,
+		&i.MsgContent,
+		&i.MsgExtend,
+		&i.FileID,
+		&i.AccountID,
+		&i.RelationID,
+		&i.CreateAt,
+		&i.IsRevoke,
+		&i.IsTop,
+		&i.IsPin,
+		&i.PinTime,
+		&i.ReadIds,
+		&i.ReplyCount,
+		&i.Total,
+	)
+	return &i, err
+}
+
 const offerMsgsByAccountIDAndTime = `-- name: OfferMsgsByAccountIDAndTime :many
 select m1.id,
        m1.notify_type,
        m1.msg_type,
        m1.msg_content,
-       m1.msg_extend,
+       coalesce(m1.msg_extend,'{}'),
        m1.file_id,
        m1.account_id,
        m1.rly_msg_id,
@@ -650,4 +714,52 @@ func (q *Queries) OfferMsgsByAccountIDAndTime(ctx context.Context, arg *OfferMsg
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateMsgPin = `-- name: UpdateMsgPin :exec
+update messages
+set is_pin = ?
+where id = ?
+`
+
+type UpdateMsgPinParams struct {
+	IsPin bool
+	ID    int64
+}
+
+func (q *Queries) UpdateMsgPin(ctx context.Context, arg *UpdateMsgPinParams) error {
+	_, err := q.exec(ctx, q.updateMsgPinStmt, updateMsgPin, arg.IsPin, arg.ID)
+	return err
+}
+
+const updateMsgRevoke = `-- name: UpdateMsgRevoke :exec
+update messages
+set is_revoke = ?
+where id = ?
+`
+
+type UpdateMsgRevokeParams struct {
+	IsRevoke bool
+	ID       int64
+}
+
+func (q *Queries) UpdateMsgRevoke(ctx context.Context, arg *UpdateMsgRevokeParams) error {
+	_, err := q.exec(ctx, q.updateMsgRevokeStmt, updateMsgRevoke, arg.IsRevoke, arg.ID)
+	return err
+}
+
+const updateMsgTop = `-- name: UpdateMsgTop :exec
+update messages
+set is_top = ?
+where id = ?
+`
+
+type UpdateMsgTopParams struct {
+	IsTop bool
+	ID    int64
+}
+
+func (q *Queries) UpdateMsgTop(ctx context.Context, arg *UpdateMsgTopParams) error {
+	_, err := q.exec(ctx, q.updateMsgTopStmt, updateMsgTop, arg.IsTop, arg.ID)
+	return err
 }

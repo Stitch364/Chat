@@ -92,6 +92,7 @@ func (message) GetMsgsByContent(ctx *gin.Context) {
 		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
 		return
 	}
+
 	content, ok := middlewares.GetTokenContent(ctx)
 	if !ok || content.TokenType != model.AccountToken {
 		reply.Reply(errcodes.AuthNotExist)
@@ -100,4 +101,68 @@ func (message) GetMsgsByContent(ctx *gin.Context) {
 	limit, offset := global.Page.GetPageSizeAndOffset(ctx.Request)
 	result, err := logic.Logics.Message.GetMsgsByContent(ctx, content.ID, params.RelationID, params.Content, limit, offset)
 	reply.ReplyList(err, result.Total, result.List)
+}
+
+func (message) UpdateMsgPin(ctx *gin.Context) {
+	reply := app.NewResponse(ctx)
+	params := new(request.ParamUpdateMsgPin)
+	if err := ctx.ShouldBindQuery(params); err != nil {
+		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
+		return
+	}
+	content, ok := middlewares.GetTokenContent(ctx)
+	if !ok || content.TokenType != model.AccountToken {
+		reply.Reply(errcodes.AuthNotExist)
+		return
+	}
+
+	err := logic.Logics.Message.UpdateMsgPin(ctx, content.ID, params)
+	reply.Reply(err)
+}
+func (message) UpdateMsgTop(ctx *gin.Context) {
+	reply := app.NewResponse(ctx)
+	params := new(request.ParamUpdateMsgTop)
+	if err := ctx.ShouldBindJSON(params); err != nil {
+		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
+		return
+	}
+	content, ok := middlewares.GetTokenContent(ctx)
+	if !ok || content.TokenType != model.AccountToken {
+		reply.Reply(errcodes.AuthNotExist)
+		return
+	}
+	err := logic.Logics.Message.UpdateMsgTop(ctx, content.ID, params)
+	reply.Reply(err)
+}
+
+func (message) RevokeMsg(ctx *gin.Context) {
+	reply := app.NewResponse(ctx)
+	params := new(request.ParamRevokeMsg)
+	if err := ctx.ShouldBindJSON(params); err != nil {
+		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
+		return
+	}
+	content, ok := middlewares.GetTokenContent(ctx)
+	if !ok || content.TokenType != model.AccountToken {
+		reply.Reply(errcodes.AuthNotExist)
+		return
+	}
+	err := logic.Logics.Message.RevokeMsg(ctx, content.ID, params.ID)
+	reply.Reply(err)
+}
+
+func (message) GetTopMsgByRelationID(ctx *gin.Context) {
+	reply := app.NewResponse(ctx)
+	params := new(request.ParamGetTopMsgByRelationID)
+	if err := ctx.ShouldBindQuery(params); err != nil {
+		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
+		return
+	}
+	content, ok := middlewares.GetTokenContent(ctx)
+	if !ok || content.TokenType != model.AccountToken {
+		reply.Reply(errcodes.AuthNotExist)
+		return
+	}
+	result, err := logic.Logics.Message.GetTopMsgByRelationID(ctx, content.ID, params.RelationID)
+	reply.Reply(err, result)
 }

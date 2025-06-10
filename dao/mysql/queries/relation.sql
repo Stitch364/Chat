@@ -17,3 +17,13 @@ delete
 from relations
 where relation = 'friend'
   and (account1_id = ? or account2_id = ?);
+
+-- name: GetAllRelationIDs :many
+select id
+from relations;
+
+-- name: GetAccountIDsByRelationID :many
+select distinct account_id
+from settings
+where relation_id = ?;
+

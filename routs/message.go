@@ -12,6 +12,17 @@ type message struct {
 func (message) Init(router *gin.RouterGroup) {
 	r := router.Group("/message", middlewares.MustAccount())
 	{
+
+		update := r.Group("update")
+		{
+			update.PUT("pin", api.Apis.Message.UpdateMsgPin)
+			update.PUT("top", api.Apis.Message.UpdateMsgTop)
+			update.PUT("revoke", api.Apis.Message.RevokeMsg)
+		}
+		info := r.Group("info")
+		{
+			info.GET("top", api.Apis.Message.GetTopMsgByRelationID)
+		}
 		list := r.Group("list")
 		{
 			list.GET("time", api.Apis.Message.GetMsgsByRelationIDAndTime)

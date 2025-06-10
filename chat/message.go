@@ -63,17 +63,17 @@ func (message) SengMsg(ctx context.Context, params model.HandleSendMsg) (*client
 			IsRevoked:  rlyInfo.IsRevoke,
 		}
 	}
-	msgExtend, err := model.ExtendToJson(params.MsgExtend)
-	if err != nil {
-		global.Logger.Error(err.Error())
-		return nil, errcode.ErrServer
-	}
+	//msgExtend, err := model.ExtendToJson(params.MsgExtend)
+	//if err != nil {
+	//	global.Logger.Error(err.Error())
+	//	return nil, errcode.ErrServer
+	//}
 	//将消息存储到数据库
 	result, err := dao.Database.DB.CreateMessageTx(ctx, &db.CreateMessageParams{
-		NotifyType: db.MessagesNotifyTypeCommon,                         //通知类型
-		MsgType:    db.MessagesMsgType(model.MsgTypeText),               //消息类型（文本消息）
-		MsgContent: params.MsgContent,                                   //消息内容
-		MsgExtend:  msgExtend,                                           //扩展信息
+		NotifyType: db.MessagesNotifyTypeCommon,           //通知类型
+		MsgType:    db.MessagesMsgType(model.MsgTypeText), //消息类型（文本消息）
+		MsgContent: params.MsgContent,                     //消息内容
+		//MsgExtend:  msgExtend,                                           //扩展信息
 		AccountID:  sql.NullInt64{Int64: params.AccountID, Valid: true}, //发送账号
 		RlyMsgID:   sql.NullInt64{Int64: rlyMsgID, Valid: rlyMsgID > 0}, //回复的消息ID
 		RelationID: params.RelationID,                                   //关系ID

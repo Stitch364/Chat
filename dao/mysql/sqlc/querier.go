@@ -45,6 +45,7 @@ type Querier interface {
 	ExistsUserByID(ctx context.Context, id int64) (bool, error)
 	// {accounts.id:int64, r.account2_id:int64, r.account1_id:int64}
 	GetAccountByID(ctx context.Context, arg *GetAccountByIDParams) (*GetAccountByIDRow, error)
+	GetAccountIDsByRelationID(ctx context.Context, relationID int64) ([]int64, error)
 	// {user_id:int64}
 	GetAccountIDsByUserID(ctx context.Context, userID int64) ([]int64, error)
 	// {name:string, user_id:int64, page:int64, page_size:int64}
@@ -52,6 +53,7 @@ type Querier interface {
 	// {user_id:int64}
 	GetAccountsByUserID(ctx context.Context, userID int64) ([]*GetAccountsByUserIDRow, error)
 	GetAllEmail(ctx context.Context) ([]string, error)
+	GetAllRelationIDs(ctx context.Context) ([]int64, error)
 	// {account1_id:int64,account2_id:int64}
 	GetApplicationByID(ctx context.Context, arg *GetApplicationByIDParams) (*Application, error)
 	// {account1_id:int64,account2_id:int64,limit:int32,offset:int32,total:int64}
@@ -66,6 +68,7 @@ type Querier interface {
 	GetPinMsgsByRelationID(ctx context.Context, arg *GetPinMsgsByRelationIDParams) ([]*GetPinMsgsByRelationIDRow, error)
 	GetRelationIDsByAccountIDFromSettings(ctx context.Context, accountID int64) ([]int64, error)
 	GetRlyMsgsInfoByMsgID(ctx context.Context, arg *GetRlyMsgsInfoByMsgIDParams) ([]*GetRlyMsgsInfoByMsgIDRow, error)
+	GetTopMsgByRelationID(ctx context.Context, arg *GetTopMsgByRelationIDParams) (*GetTopMsgByRelationIDRow, error)
 	// {email:string}
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	// {id:int64}
@@ -77,6 +80,9 @@ type Querier interface {
 	UpdateAccountAvatar(ctx context.Context, arg *UpdateAccountAvatarParams) error
 	// {status:string,refuse_msg:string,account1_id:int64,account2_id:int64}
 	UpdateApplication(ctx context.Context, arg *UpdateApplicationParams) error
+	UpdateMsgPin(ctx context.Context, arg *UpdateMsgPinParams) error
+	UpdateMsgRevoke(ctx context.Context, arg *UpdateMsgRevokeParams) error
+	UpdateMsgTop(ctx context.Context, arg *UpdateMsgTopParams) error
 	UpdateUser(ctx context.Context, arg *UpdateUserParams) error
 }
 

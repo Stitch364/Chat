@@ -65,7 +65,7 @@ create table applications(
      account2_id bigint not null references accounts (id) on delete cascade on update cascade, -- 被申请者账号 id（外键）
      apply_msg text not null, -- 申请信息
      refuse_msg text not null, -- 拒绝信息
-     status enum('已申请','已同意','已拒绝') not null default '已申请', -- 申请状态
+     status enum('已申请','已同意','已拒绝','等待验证') not null default '已申请', -- 申请状态
      create_at timestamp not null default now(), -- 创建时间
      update_at timestamp not null default now(), -- 更新时间
      constraint f_a_pk primary key (account1_id, account2_id)

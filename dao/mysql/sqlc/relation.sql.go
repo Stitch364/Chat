@@ -42,6 +42,63 @@ func (q *Queries) DeleteFriendRelationsByAccountID(ctx context.Context, arg *Del
 	return err
 }
 
+const getAccountIDsByRelationID = `-- name: GetAccountIDsByRelationID :many
+select distinct account_id
+from settings
+where relation_id = ?
+`
+
+func (q *Queries) GetAccountIDsByRelationID(ctx context.Context, relationID int64) ([]int64, error) {
+	rows, err := q.query(ctx, q.getAccountIDsByRelationIDStmt, getAccountIDsByRelationID, relationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var account_id int64
+		if err := rows.Scan(&account_id); err != nil {
+			return nil, err
+		}
+		items = append(items, account_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllRelationIDs = `-- name: GetAllRelationIDs :many
+select id
+from relations
+`
+
+func (q *Queries) GetAllRelationIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.query(ctx, q.getAllRelationIDsStmt, getAllRelationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFriendRelationIDsByAccountID = `-- name: GetFriendRelationIDsByAccountID :many
 select  id
 from relations

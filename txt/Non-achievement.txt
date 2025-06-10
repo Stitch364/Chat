@@ -13,3 +13,7 @@ E:\Program Files\GO\my_chat\task\message.go 由于MQ暂时还没学，所以还�
 
 E:\Program Files\GO\my_chat\logic\account.go 有点问题，没有处理查询为空的情况，会引发panic
 
+E:\Program Files\GO\my_chat\logic\application.go 新增了申请状态 '等待验证' ,用于区分发出的申请和收到的申请
+
+task.UpdateMsgState 未实现
+

@@ -87,6 +87,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getAccountByIDStmt, err = db.PrepareContext(ctx, getAccountByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountByID: %w", err)
 	}
+	if q.getAccountIDsByRelationIDStmt, err = db.PrepareContext(ctx, getAccountIDsByRelationID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAccountIDsByRelationID: %w", err)
+	}
 	if q.getAccountIDsByUserIDStmt, err = db.PrepareContext(ctx, getAccountIDsByUserID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountIDsByUserID: %w", err)
 	}
@@ -98,6 +101,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getAllEmailStmt, err = db.PrepareContext(ctx, getAllEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAllEmail: %w", err)
+	}
+	if q.getAllRelationIDsStmt, err = db.PrepareContext(ctx, getAllRelationIDs); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAllRelationIDs: %w", err)
 	}
 	if q.getApplicationByIDStmt, err = db.PrepareContext(ctx, getApplicationByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetApplicationByID: %w", err)
@@ -135,6 +141,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getRlyMsgsInfoByMsgIDStmt, err = db.PrepareContext(ctx, getRlyMsgsInfoByMsgID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetRlyMsgsInfoByMsgID: %w", err)
 	}
+	if q.getTopMsgByRelationIDStmt, err = db.PrepareContext(ctx, getTopMsgByRelationID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetTopMsgByRelationID: %w", err)
+	}
 	if q.getUserByEmailStmt, err = db.PrepareContext(ctx, getUserByEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByEmail: %w", err)
 	}
@@ -152,6 +161,15 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateApplicationStmt, err = db.PrepareContext(ctx, updateApplication); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateApplication: %w", err)
+	}
+	if q.updateMsgPinStmt, err = db.PrepareContext(ctx, updateMsgPin); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateMsgPin: %w", err)
+	}
+	if q.updateMsgRevokeStmt, err = db.PrepareContext(ctx, updateMsgRevoke); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateMsgRevoke: %w", err)
+	}
+	if q.updateMsgTopStmt, err = db.PrepareContext(ctx, updateMsgTop); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateMsgTop: %w", err)
 	}
 	if q.updateUserStmt, err = db.PrepareContext(ctx, updateUser); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUser: %w", err)
@@ -266,6 +284,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getAccountByIDStmt: %w", cerr)
 		}
 	}
+	if q.getAccountIDsByRelationIDStmt != nil {
+		if cerr := q.getAccountIDsByRelationIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAccountIDsByRelationIDStmt: %w", cerr)
+		}
+	}
 	if q.getAccountIDsByUserIDStmt != nil {
 		if cerr := q.getAccountIDsByUserIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getAccountIDsByUserIDStmt: %w", cerr)
@@ -284,6 +307,11 @@ func (q *Queries) Close() error {
 	if q.getAllEmailStmt != nil {
 		if cerr := q.getAllEmailStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getAllEmailStmt: %w", cerr)
+		}
+	}
+	if q.getAllRelationIDsStmt != nil {
+		if cerr := q.getAllRelationIDsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAllRelationIDsStmt: %w", cerr)
 		}
 	}
 	if q.getApplicationByIDStmt != nil {
@@ -346,6 +374,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getRlyMsgsInfoByMsgIDStmt: %w", cerr)
 		}
 	}
+	if q.getTopMsgByRelationIDStmt != nil {
+		if cerr := q.getTopMsgByRelationIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getTopMsgByRelationIDStmt: %w", cerr)
+		}
+	}
 	if q.getUserByEmailStmt != nil {
 		if cerr := q.getUserByEmailStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByEmailStmt: %w", cerr)
@@ -374,6 +407,21 @@ func (q *Queries) Close() error {
 	if q.updateApplicationStmt != nil {
 		if cerr := q.updateApplicationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateApplicationStmt: %w", cerr)
+		}
+	}
+	if q.updateMsgPinStmt != nil {
+		if cerr := q.updateMsgPinStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateMsgPinStmt: %w", cerr)
+		}
+	}
+	if q.updateMsgRevokeStmt != nil {
+		if cerr := q.updateMsgRevokeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateMsgRevokeStmt: %w", cerr)
+		}
+	}
+	if q.updateMsgTopStmt != nil {
+		if cerr := q.updateMsgTopStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateMsgTopStmt: %w", cerr)
 		}
 	}
 	if q.updateUserStmt != nil {
@@ -441,10 +489,12 @@ type Queries struct {
 	existsSettingStmt                         *sql.Stmt
 	existsUserByIDStmt                        *sql.Stmt
 	getAccountByIDStmt                        *sql.Stmt
+	getAccountIDsByRelationIDStmt             *sql.Stmt
 	getAccountIDsByUserIDStmt                 *sql.Stmt
 	getAccountsByNameStmt                     *sql.Stmt
 	getAccountsByUserIDStmt                   *sql.Stmt
 	getAllEmailStmt                           *sql.Stmt
+	getAllRelationIDsStmt                     *sql.Stmt
 	getApplicationByIDStmt                    *sql.Stmt
 	getApplicationsStmt                       *sql.Stmt
 	getFriendRelationIDsByAccountIDStmt       *sql.Stmt
@@ -457,12 +507,16 @@ type Queries struct {
 	getPinMsgsByRelationIDStmt                *sql.Stmt
 	getRelationIDsByAccountIDFromSettingsStmt *sql.Stmt
 	getRlyMsgsInfoByMsgIDStmt                 *sql.Stmt
+	getTopMsgByRelationIDStmt                 *sql.Stmt
 	getUserByEmailStmt                        *sql.Stmt
 	getUserByIDStmt                           *sql.Stmt
 	offerMsgsByAccountIDAndTimeStmt           *sql.Stmt
 	updateAccountStmt                         *sql.Stmt
 	updateAccountAvatarStmt                   *sql.Stmt
 	updateApplicationStmt                     *sql.Stmt
+	updateMsgPinStmt                          *sql.Stmt
+	updateMsgRevokeStmt                       *sql.Stmt
+	updateMsgTopStmt                          *sql.Stmt
 	updateUserStmt                            *sql.Stmt
 }
 
@@ -491,10 +545,12 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		existsSettingStmt:                         q.existsSettingStmt,
 		existsUserByIDStmt:                        q.existsUserByIDStmt,
 		getAccountByIDStmt:                        q.getAccountByIDStmt,
+		getAccountIDsByRelationIDStmt:             q.getAccountIDsByRelationIDStmt,
 		getAccountIDsByUserIDStmt:                 q.getAccountIDsByUserIDStmt,
 		getAccountsByNameStmt:                     q.getAccountsByNameStmt,
 		getAccountsByUserIDStmt:                   q.getAccountsByUserIDStmt,
 		getAllEmailStmt:                           q.getAllEmailStmt,
+		getAllRelationIDsStmt:                     q.getAllRelationIDsStmt,
 		getApplicationByIDStmt:                    q.getApplicationByIDStmt,
 		getApplicationsStmt:                       q.getApplicationsStmt,
 		getFriendRelationIDsByAccountIDStmt:       q.getFriendRelationIDsByAccountIDStmt,
@@ -507,12 +563,16 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getPinMsgsByRelationIDStmt:                q.getPinMsgsByRelationIDStmt,
 		getRelationIDsByAccountIDFromSettingsStmt: q.getRelationIDsByAccountIDFromSettingsStmt,
 		getRlyMsgsInfoByMsgIDStmt:                 q.getRlyMsgsInfoByMsgIDStmt,
+		getTopMsgByRelationIDStmt:                 q.getTopMsgByRelationIDStmt,
 		getUserByEmailStmt:                        q.getUserByEmailStmt,
 		getUserByIDStmt:                           q.getUserByIDStmt,
 		offerMsgsByAccountIDAndTimeStmt:           q.offerMsgsByAccountIDAndTimeStmt,
 		updateAccountStmt:                         q.updateAccountStmt,
 		updateAccountAvatarStmt:                   q.updateAccountAvatarStmt,
 		updateApplicationStmt:                     q.updateApplicationStmt,
+		updateMsgPinStmt:                          q.updateMsgPinStmt,
+		updateMsgRevokeStmt:                       q.updateMsgRevokeStmt,
+		updateMsgTopStmt:                          q.updateMsgTopStmt,
 		updateUserStmt:                            q.updateUserStmt,
 	}
 }

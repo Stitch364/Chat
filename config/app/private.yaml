@@ -1,27 +1,32 @@
 Mysql:
   DirverName: "mysql"  # 驱动名称
-  DataSourceName:  "username:password@tcp(URL:port)/databasename?charset=utf8mb4&parseTime=True&loc=Local" # 数据源名称
+  DataSourceName:  "root:123456@tcp(43.138.32.240:3306)/chat?charset=utf8mb4&parseTime=True&loc=Local" # 数据源名称
   MaxOpenConns: 200
   MaxIdleConns: 50
 Redis:
-  Address: "url:port" #redis 服务器地址
-  Password: password
+  Address: "43.138.32.240:6379" #redis 服务器地址
+  Password: "123456"
   DB: 0 # 数据库索引
   PoolSize: 100  # 连接池大小
   CacheTime: 10m # redis 缓存时间
 Email:
-  Password: password
+  Password: ideqyfyxjfziigaj
   IsSSL: true # 是否使用 SSL 加密
   Host: smtp.qq.com # 邮箱服务器的主机地址，smtp.qq.com 是 QQ 邮件的 SMTP
   Port: 465 # 邮箱服务器端口号
-  Username: username
-  From: from_address
+  Username: 1396155877@qq.com
+  From: 1396155877@qq.com
   To:
-    - to_address
+    - liuyantao626@126.com
 Token:
-  Key: token_key # 密钥（必须是32个字节，因为我们使用的是 chacha20poly1305 加密算法）
+  Key: tqgymXijyHpZbeoXcOexVBHbBsBlDNrm # 密钥（必须是32个字节，因为我们使用的是 chacha20poly1305 加密算法）
   AccessTokenExpire: 168h # 用户 token 的访问令牌
   RefreshTokenExpire: 720h # 用户 token 的刷新令牌
   AccountTokenDuration: 24h # 账户 token 的有效期限
   AuthorizationKey: Authorization
   AuthorizationType: Bearer
+RocketMQ:
+  Addr: "43.138.32.240"
+  Port: 9876
+
+  # 新服务器IP  43.138.32.240

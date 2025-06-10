@@ -17,6 +17,7 @@ type TXer interface {
 	CreateApplicationTx(ctx context.Context, params *db.CreateApplicationParams) error
 	AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow) (*db.Message, error)
 	CreateMessageTx(ctx context.Context, params *db.CreateMessageParams) (*db.GetMessageInfoTxRow, error)
+	RevokeMsgWithTx(ctx context.Context, msgID int64, isPin, isTop bool) error
 }
 
 // MySQLDB 实现了 DB 接口

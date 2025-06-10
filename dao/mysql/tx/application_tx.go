@@ -8,7 +8,6 @@ import (
 	"chat/pkg/tool"
 	"context"
 	"database/sql"
-	"encoding/json"
 )
 
 // CreateApplicationTx 用事务先判断是否存在申请，不存在则创建
@@ -19,7 +18,9 @@ func (store *MySQLDB) CreateApplicationTx(ctx context.Context, params *db.Create
 		//查看申请是否存在
 		ok, err := q.ExistsApplicationByIDWithLock(ctx, &db.ExistsApplicationByIDWithLockParams{
 			Account1ID:   params.Account1ID,
+			Account2ID:   params.Account2ID,
 			Account1ID_2: params.Account1ID,
+			Account2ID_2: params.Account2ID,
 		})
 		if err != nil {
 			return err
@@ -88,7 +89,7 @@ func (store *MySQLDB) AcceptApplicationTx(ctx context.Context, rdb *operate.RDB,
 				NotifyType: db.MessagesNotifyTypeCommon,
 				MsgType:    db.MessagesMsgType(model.MsgTypeText),
 				MsgContent: "我们已经是好友了，现在可以开始聊天啦！",
-				MsgExtend:  json.RawMessage(``),
+				//MsgExtend:  json.RawMessage(``),
 				AccountID:  sql.NullInt64{Int64: account1.ID, Valid: true},
 				RelationID: relationID,
 			}

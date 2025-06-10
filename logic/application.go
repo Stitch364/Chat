@@ -7,10 +7,10 @@ import (
 	"chat/global"
 	"chat/middlewares"
 	"chat/model/reply"
+	"database/sql"
 	"errors"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v4"
 )
 
 type application struct {
@@ -47,7 +47,8 @@ func (application) DeleteApplication(ctx *gin.Context, accountID1, accountID2 in
 	if err != nil {
 		return errcode.ErrServer
 	}
-	//好像不会有这种情况（A给B发申请，ID1 就是 A 的 ID，ID2 就是 B 的 ID）
+	//判断删申请的人是不是发送申请的人
+	//只能删自己发出去的
 	if apply.Account1ID != accountID1 {
 		return errcodes.AuthPermissionsInsufficient
 	}
@@ -69,7 +70,7 @@ func getApplication(ctx *gin.Context, accountID1, accountID2 int64) (*db.Applica
 	switch {
 	case errors.Is(err, nil):
 		return apply, nil
-	case errors.Is(err, pgx.ErrNoRows):
+	case errors.Is(err, sql.ErrNoRows):
 		return nil, errcodes.ApplicationNotExists
 	default:
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
@@ -152,7 +153,11 @@ func (application) ListApplications(ctx *gin.Context, accountID int64, limit, of
 	for i, v := range list {
 		name, avatar := v.Account1Name, v.Account1Avatar
 		if v.Account1ID == accountID {
+			//显示的是哪个账号的申请
 			name, avatar = v.Account2Name, v.Account2Avatar
+		}
+		if v.Account2ID == accountID && v.Status == db.ApplicationsStatusValue0 {
+			v.Status = db.ApplicationsStatusValue3
 		}
 		data[i] = &reply.ParamApplicationInfo{
 			AccountID1: v.Account1ID,
@@ -174,7 +179,7 @@ func (application) ListApplications(ctx *gin.Context, accountID int64, limit, of
 
 	return reply.ParamListApplication{
 		List:  data,
-		Total: total,
+		Total: TotalToPageTotal(total, limit),
 	}, nil
 
 }
