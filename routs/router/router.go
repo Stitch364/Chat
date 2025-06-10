@@ -26,7 +26,7 @@ func NewRouter() *gin.Engine {
 		rg.Account.Init(root)
 		rg.Application.Init(root)
 		rg.Message.Init(root)
-
+		rg.Setting.Init(root)
 	}
 
 	return r

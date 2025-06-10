@@ -6,6 +6,7 @@ type routers struct {
 	Account     account
 	Application application
 	Message     message
+	Setting     setting
 }
 
 var Routers = new(routers)

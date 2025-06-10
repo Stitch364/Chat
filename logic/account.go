@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v4"
 )
 
 type account struct{}
@@ -95,7 +94,7 @@ func getAccountInfoByID(ctx *gin.Context, accountID, selfID int64) (*db.GetAccou
 		Account1ID: sql.NullInt64{Int64: selfID, Valid: true},
 	})
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errcodes.AccountNotFound
 		}
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)

@@ -7,6 +7,7 @@ import (
 	"chat/global"
 	"chat/middlewares"
 	"chat/model/reply"
+	"chat/task"
 	"database/sql"
 	"errors"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
@@ -98,14 +99,24 @@ func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 in
 		return myerr
 	}
 	//同意后需要创建两人好友关系，创建两人互相的设置，推送消息
-	//msgInfo, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
-	_, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
+	msgInfo, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
+	//_, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
 	if err != nil {
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return errcode.ErrServer
 	}
 	//推送消息
-
+	global.Worker.SendTask(task.PublishMsg(reply.ParamMsgInfoWithRly{
+		ParamMsgInfo: reply.ParamMsgInfo{
+			ID:         msgInfo.ID,
+			NotifyType: string(msgInfo.NotifyType),
+			MsgType:    string(msgInfo.MsgType),
+			MsgContent: msgInfo.MsgContent,
+			RelationID: msgInfo.RelationID,
+			CreateAt:   msgInfo.CreateAt,
+		},
+		RlyMsg: nil,
+	}))
 	return nil
 }
 
@@ -137,8 +148,8 @@ func (application) ListApplications(ctx *gin.Context, accountID int64, limit, of
 	list, err := dao.Database.DB.GetApplications(ctx, &db.GetApplicationsParams{
 		Account1ID: accountID,
 		Account2ID: accountID,
-		Limit:      int32(limit),
-		Offset:     int32(offset),
+		Limit:      limit,
+		Offset:     offset,
 	})
 	if err != nil {
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)

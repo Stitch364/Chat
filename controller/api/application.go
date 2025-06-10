@@ -75,7 +75,7 @@ func (application) AcceptApplication(ctx *gin.Context) {
 		return
 	}
 	//2.业务处理
-	err := logic.Logics.Application.AcceptApplication(ctx, content.ID, params.AccountID)
+	err := logic.Logics.Application.AcceptApplication(ctx, params.AccountID, content.ID)
 
 	//3.返回响应
 	reply.Reply(err)

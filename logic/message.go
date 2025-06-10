@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 )
 
@@ -505,7 +504,7 @@ func (message) GetTopMsgByRelationID(ctx *gin.Context, accountID, relationID int
 		RelationID_2: relationID,
 	})
 	if myErr != nil {
-		if errors.Is(myErr, pgx.ErrNoRows) {
+		if errors.Is(myErr, sql.ErrNoRows) {
 			return nil, nil
 		}
 		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)

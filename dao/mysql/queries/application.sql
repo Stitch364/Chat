@@ -31,7 +31,8 @@ limit 1;
 -- {status:string,refuse_msg:string,account1_id:int64,account2_id:int64}
 update applications
 set status = ?,
-    refuse_msg = ?
+    refuse_msg = ?,
+    update_at = now()
 where account1_id = ?
   and account2_id = ?;
 

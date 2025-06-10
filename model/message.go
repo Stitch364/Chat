@@ -58,7 +58,7 @@ func JsonToExtend(data json.RawMessage) (*MsgExtend, error) {
 		return nil, nil
 	}
 	extend := &MsgExtend{}
-	err := json.Unmarshal(data, extend)
+	err := json.Unmarshal(data, &extend.Remind)
 	if err != nil {
 		return nil, err
 	}

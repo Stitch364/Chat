@@ -8,12 +8,12 @@ import (
 	"chat/middlewares"
 	"chat/model"
 	"chat/model/reply"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/XYYSWK/Lutils/pkg/password"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v4"
 )
 
 type user struct{}
@@ -96,7 +96,7 @@ func (user) Login(ctx *gin.Context, emailStr, pwd string) (*reply.ParamLogin, er
 	//通过用户邮箱获取用户信息
 	userInfo, err := dao.Database.DB.GetUserByEmail(ctx, emailStr)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errcodes.UserNotFound
 		}
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
@@ -234,7 +234,7 @@ func (user) Logout(ctx *gin.Context) errcode.Err {
 func getUserInfoByID(ctx *gin.Context, userID int64) (*db.User, errcode.Err) {
 	userInfo, err := dao.Database.DB.GetUserByID(ctx, userID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errcodes.UserNotFound
 		}
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
@@ -247,7 +247,7 @@ func getUserInfoByID(ctx *gin.Context, userID int64) (*db.User, errcode.Err) {
 func getUserInfoByEmail(ctx *gin.Context, emailStr string) (*db.User, errcode.Err) {
 	userInfo, err := dao.Database.DB.GetUserByEmail(ctx, emailStr)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errcodes.UserNotFound
 		}
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)

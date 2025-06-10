@@ -5,7 +5,7 @@ logic层的UpdateAccount部分功能没实现，后面涉及到了再实现
 
 logic/application中的global.Worker.SendTask(提示对方有新的消息)没实现
 
-logic/AcceptApplication 中的AcceptApplication 后面推送消息 task.PublishMsg
+// logic/AcceptApplication 中的AcceptApplication 后面推送消息 task.PublishMsg
 
 logic/AcceptApplication 中的AcceptApplication 由于推送消息没完成所以，还不能调用
 

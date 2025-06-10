@@ -187,7 +187,8 @@ func (q *Queries) GetApplications(ctx context.Context, arg *GetApplicationsParam
 const updateApplication = `-- name: UpdateApplication :exec
 update applications
 set status = ?,
-    refuse_msg = ?
+    refuse_msg = ?,
+    update_at = now()
 where account1_id = ?
   and account2_id = ?
 `
