@@ -36,6 +36,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createFriendRelationStmt, err = db.PrepareContext(ctx, createFriendRelation); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateFriendRelation: %w", err)
 	}
+	if q.createGroupRelationStmt, err = db.PrepareContext(ctx, createGroupRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateGroupRelation: %w", err)
+	}
 	if q.createMessageStmt, err = db.PrepareContext(ctx, createMessage); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateMessage: %w", err)
 	}
@@ -57,6 +60,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteFriendRelationsByAccountIDStmt, err = db.PrepareContext(ctx, deleteFriendRelationsByAccountID); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteFriendRelationsByAccountID: %w", err)
 	}
+	if q.deleteRelationStmt, err = db.PrepareContext(ctx, deleteRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteRelation: %w", err)
+	}
+	if q.deleteSettingStmt, err = db.PrepareContext(ctx, deleteSetting); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteSetting: %w", err)
+	}
 	if q.deleteSettingsByAccountIDStmt, err = db.PrepareContext(ctx, deleteSettingsByAccountID); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteSettingsByAccountID: %w", err)
 	}
@@ -75,8 +84,17 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.existsApplicationByIDWithLockStmt, err = db.PrepareContext(ctx, existsApplicationByIDWithLock); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistsApplicationByIDWithLock: %w", err)
 	}
+	if q.existsFriendRelationStmt, err = db.PrepareContext(ctx, existsFriendRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query ExistsFriendRelation: %w", err)
+	}
+	if q.existsFriendSettingStmt, err = db.PrepareContext(ctx, existsFriendSetting); err != nil {
+		return nil, fmt.Errorf("error preparing query ExistsFriendSetting: %w", err)
+	}
 	if q.existsGroupLeaderByAccountIDWithLockStmt, err = db.PrepareContext(ctx, existsGroupLeaderByAccountIDWithLock); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistsGroupLeaderByAccountIDWithLock: %w", err)
+	}
+	if q.existsIsLeaderStmt, err = db.PrepareContext(ctx, existsIsLeader); err != nil {
+		return nil, fmt.Errorf("error preparing query ExistsIsLeader: %w", err)
 	}
 	if q.existsSettingStmt, err = db.PrepareContext(ctx, existsSetting); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistsSetting: %w", err)
@@ -86,6 +104,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getAccountByIDStmt, err = db.PrepareContext(ctx, getAccountByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountByID: %w", err)
+	}
+	if q.getAccountIDsByMsgIDStmt, err = db.PrepareContext(ctx, getAccountIDsByMsgID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAccountIDsByMsgID: %w", err)
 	}
 	if q.getAccountIDsByRelationIDStmt, err = db.PrepareContext(ctx, getAccountIDsByRelationID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountIDsByRelationID: %w", err)
@@ -99,11 +120,20 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getAccountsByUserIDStmt, err = db.PrepareContext(ctx, getAccountsByUserID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountsByUserID: %w", err)
 	}
+	if q.getAcountIDsByUserIDStmt, err = db.PrepareContext(ctx, getAcountIDsByUserID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAcountIDsByUserID: %w", err)
+	}
 	if q.getAllEmailStmt, err = db.PrepareContext(ctx, getAllEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAllEmail: %w", err)
 	}
+	if q.getAllGroupRelationStmt, err = db.PrepareContext(ctx, getAllGroupRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAllGroupRelation: %w", err)
+	}
 	if q.getAllRelationIDsStmt, err = db.PrepareContext(ctx, getAllRelationIDs); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAllRelationIDs: %w", err)
+	}
+	if q.getAllRelationOnRelationStmt, err = db.PrepareContext(ctx, getAllRelationOnRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAllRelationOnRelation: %w", err)
 	}
 	if q.getApplicationByIDStmt, err = db.PrepareContext(ctx, getApplicationByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetApplicationByID: %w", err)
@@ -111,17 +141,56 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getApplicationsStmt, err = db.PrepareContext(ctx, getApplications); err != nil {
 		return nil, fmt.Errorf("error preparing query GetApplications: %w", err)
 	}
+	if q.getFriendPinSettingsOrderByPinTimeStmt, err = db.PrepareContext(ctx, getFriendPinSettingsOrderByPinTime); err != nil {
+		return nil, fmt.Errorf("error preparing query GetFriendPinSettingsOrderByPinTime: %w", err)
+	}
+	if q.getFriendRelationByIDStmt, err = db.PrepareContext(ctx, getFriendRelationByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetFriendRelationByID: %w", err)
+	}
 	if q.getFriendRelationIDsByAccountIDStmt, err = db.PrepareContext(ctx, getFriendRelationIDsByAccountID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFriendRelationIDsByAccountID: %w", err)
 	}
 	if q.getFriendRelationIdByID1AndID1Stmt, err = db.PrepareContext(ctx, getFriendRelationIdByID1AndID1); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFriendRelationIdByID1AndID1: %w", err)
 	}
+	if q.getFriendSettingsByNameStmt, err = db.PrepareContext(ctx, getFriendSettingsByName); err != nil {
+		return nil, fmt.Errorf("error preparing query GetFriendSettingsByName: %w", err)
+	}
+	if q.getFriendSettingsOrderByNameStmt, err = db.PrepareContext(ctx, getFriendSettingsOrderByName); err != nil {
+		return nil, fmt.Errorf("error preparing query GetFriendSettingsOrderByName: %w", err)
+	}
+	if q.getFriendShowSettingsOrderByShowTimeStmt, err = db.PrepareContext(ctx, getFriendShowSettingsOrderByShowTime); err != nil {
+		return nil, fmt.Errorf("error preparing query GetFriendShowSettingsOrderByShowTime: %w", err)
+	}
+	if q.getGroupListStmt, err = db.PrepareContext(ctx, getGroupList); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupList: %w", err)
+	}
+	if q.getGroupMembersByIDStmt, err = db.PrepareContext(ctx, getGroupMembersByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupMembersByID: %w", err)
+	}
+	if q.getGroupPinSettingsOrderByPinTimeStmt, err = db.PrepareContext(ctx, getGroupPinSettingsOrderByPinTime); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupPinSettingsOrderByPinTime: %w", err)
+	}
+	if q.getGroupRelationByIDStmt, err = db.PrepareContext(ctx, getGroupRelationByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupRelationByID: %w", err)
+	}
+	if q.getGroupRelationsIdStmt, err = db.PrepareContext(ctx, getGroupRelationsId); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupRelationsId: %w", err)
+	}
+	if q.getGroupSettingsByNameStmt, err = db.PrepareContext(ctx, getGroupSettingsByName); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupSettingsByName: %w", err)
+	}
+	if q.getGroupShowSettingsOrderByShowTimeStmt, err = db.PrepareContext(ctx, getGroupShowSettingsOrderByShowTime); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupShowSettingsOrderByShowTime: %w", err)
+	}
 	if q.getMessageByIDStmt, err = db.PrepareContext(ctx, getMessageByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMessageByID: %w", err)
 	}
 	if q.getMessageInfoTxStmt, err = db.PrepareContext(ctx, getMessageInfoTx); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMessageInfoTx: %w", err)
+	}
+	if q.getMsgDeleteByIdStmt, err = db.PrepareContext(ctx, getMsgDeleteById); err != nil {
+		return nil, fmt.Errorf("error preparing query GetMsgDeleteById: %w", err)
 	}
 	if q.getMsgsByContentStmt, err = db.PrepareContext(ctx, getMsgsByContent); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMsgsByContent: %w", err)
@@ -135,11 +204,17 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getPinMsgsByRelationIDStmt, err = db.PrepareContext(ctx, getPinMsgsByRelationID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetPinMsgsByRelationID: %w", err)
 	}
+	if q.getRelationIDByAccountIDStmt, err = db.PrepareContext(ctx, getRelationIDByAccountID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetRelationIDByAccountID: %w", err)
+	}
 	if q.getRelationIDsByAccountIDFromSettingsStmt, err = db.PrepareContext(ctx, getRelationIDsByAccountIDFromSettings); err != nil {
 		return nil, fmt.Errorf("error preparing query GetRelationIDsByAccountIDFromSettings: %w", err)
 	}
 	if q.getRlyMsgsInfoByMsgIDStmt, err = db.PrepareContext(ctx, getRlyMsgsInfoByMsgID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetRlyMsgsInfoByMsgID: %w", err)
+	}
+	if q.getSettingByIDStmt, err = db.PrepareContext(ctx, getSettingByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetSettingByID: %w", err)
 	}
 	if q.getTopMsgByRelationIDStmt, err = db.PrepareContext(ctx, getTopMsgByRelationID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetTopMsgByRelationID: %w", err)
@@ -153,6 +228,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.offerMsgsByAccountIDAndTimeStmt, err = db.PrepareContext(ctx, offerMsgsByAccountIDAndTime); err != nil {
 		return nil, fmt.Errorf("error preparing query OfferMsgsByAccountIDAndTime: %w", err)
 	}
+	if q.transferIsLeaderFalseStmt, err = db.PrepareContext(ctx, transferIsLeaderFalse); err != nil {
+		return nil, fmt.Errorf("error preparing query TransferIsLeaderFalse: %w", err)
+	}
+	if q.transferIsLeaderTrueStmt, err = db.PrepareContext(ctx, transferIsLeaderTrue); err != nil {
+		return nil, fmt.Errorf("error preparing query TransferIsLeaderTrue: %w", err)
+	}
 	if q.updateAccountStmt, err = db.PrepareContext(ctx, updateAccount); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateAccount: %w", err)
 	}
@@ -162,6 +243,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.updateApplicationStmt, err = db.PrepareContext(ctx, updateApplication); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateApplication: %w", err)
 	}
+	if q.updateGroupRelationStmt, err = db.PrepareContext(ctx, updateGroupRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateGroupRelation: %w", err)
+	}
+	if q.updateMsgDeleteStmt, err = db.PrepareContext(ctx, updateMsgDelete); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateMsgDelete: %w", err)
+	}
 	if q.updateMsgPinStmt, err = db.PrepareContext(ctx, updateMsgPin); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateMsgPin: %w", err)
 	}
@@ -170,6 +257,21 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateMsgTopStmt, err = db.PrepareContext(ctx, updateMsgTop); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateMsgTop: %w", err)
+	}
+	if q.updateSettingDisturbStmt, err = db.PrepareContext(ctx, updateSettingDisturb); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSettingDisturb: %w", err)
+	}
+	if q.updateSettingLeaderStmt, err = db.PrepareContext(ctx, updateSettingLeader); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSettingLeader: %w", err)
+	}
+	if q.updateSettingNickNameStmt, err = db.PrepareContext(ctx, updateSettingNickName); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSettingNickName: %w", err)
+	}
+	if q.updateSettingPinStmt, err = db.PrepareContext(ctx, updateSettingPin); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSettingPin: %w", err)
+	}
+	if q.updateSettingShowStmt, err = db.PrepareContext(ctx, updateSettingShow); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateSettingShow: %w", err)
 	}
 	if q.updateUserStmt, err = db.PrepareContext(ctx, updateUser); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateUser: %w", err)
@@ -197,6 +299,11 @@ func (q *Queries) Close() error {
 	if q.createFriendRelationStmt != nil {
 		if cerr := q.createFriendRelationStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createFriendRelationStmt: %w", cerr)
+		}
+	}
+	if q.createGroupRelationStmt != nil {
+		if cerr := q.createGroupRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createGroupRelationStmt: %w", cerr)
 		}
 	}
 	if q.createMessageStmt != nil {
@@ -234,6 +341,16 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteFriendRelationsByAccountIDStmt: %w", cerr)
 		}
 	}
+	if q.deleteRelationStmt != nil {
+		if cerr := q.deleteRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteRelationStmt: %w", cerr)
+		}
+	}
+	if q.deleteSettingStmt != nil {
+		if cerr := q.deleteSettingStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteSettingStmt: %w", cerr)
+		}
+	}
 	if q.deleteSettingsByAccountIDStmt != nil {
 		if cerr := q.deleteSettingsByAccountIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteSettingsByAccountIDStmt: %w", cerr)
@@ -264,9 +381,24 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing existsApplicationByIDWithLockStmt: %w", cerr)
 		}
 	}
+	if q.existsFriendRelationStmt != nil {
+		if cerr := q.existsFriendRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing existsFriendRelationStmt: %w", cerr)
+		}
+	}
+	if q.existsFriendSettingStmt != nil {
+		if cerr := q.existsFriendSettingStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing existsFriendSettingStmt: %w", cerr)
+		}
+	}
 	if q.existsGroupLeaderByAccountIDWithLockStmt != nil {
 		if cerr := q.existsGroupLeaderByAccountIDWithLockStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing existsGroupLeaderByAccountIDWithLockStmt: %w", cerr)
+		}
+	}
+	if q.existsIsLeaderStmt != nil {
+		if cerr := q.existsIsLeaderStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing existsIsLeaderStmt: %w", cerr)
 		}
 	}
 	if q.existsSettingStmt != nil {
@@ -282,6 +414,11 @@ func (q *Queries) Close() error {
 	if q.getAccountByIDStmt != nil {
 		if cerr := q.getAccountByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getAccountByIDStmt: %w", cerr)
+		}
+	}
+	if q.getAccountIDsByMsgIDStmt != nil {
+		if cerr := q.getAccountIDsByMsgIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAccountIDsByMsgIDStmt: %w", cerr)
 		}
 	}
 	if q.getAccountIDsByRelationIDStmt != nil {
@@ -304,14 +441,29 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getAccountsByUserIDStmt: %w", cerr)
 		}
 	}
+	if q.getAcountIDsByUserIDStmt != nil {
+		if cerr := q.getAcountIDsByUserIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAcountIDsByUserIDStmt: %w", cerr)
+		}
+	}
 	if q.getAllEmailStmt != nil {
 		if cerr := q.getAllEmailStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getAllEmailStmt: %w", cerr)
 		}
 	}
+	if q.getAllGroupRelationStmt != nil {
+		if cerr := q.getAllGroupRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAllGroupRelationStmt: %w", cerr)
+		}
+	}
 	if q.getAllRelationIDsStmt != nil {
 		if cerr := q.getAllRelationIDsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getAllRelationIDsStmt: %w", cerr)
+		}
+	}
+	if q.getAllRelationOnRelationStmt != nil {
+		if cerr := q.getAllRelationOnRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAllRelationOnRelationStmt: %w", cerr)
 		}
 	}
 	if q.getApplicationByIDStmt != nil {
@@ -324,6 +476,16 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getApplicationsStmt: %w", cerr)
 		}
 	}
+	if q.getFriendPinSettingsOrderByPinTimeStmt != nil {
+		if cerr := q.getFriendPinSettingsOrderByPinTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getFriendPinSettingsOrderByPinTimeStmt: %w", cerr)
+		}
+	}
+	if q.getFriendRelationByIDStmt != nil {
+		if cerr := q.getFriendRelationByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getFriendRelationByIDStmt: %w", cerr)
+		}
+	}
 	if q.getFriendRelationIDsByAccountIDStmt != nil {
 		if cerr := q.getFriendRelationIDsByAccountIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getFriendRelationIDsByAccountIDStmt: %w", cerr)
@@ -334,6 +496,56 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getFriendRelationIdByID1AndID1Stmt: %w", cerr)
 		}
 	}
+	if q.getFriendSettingsByNameStmt != nil {
+		if cerr := q.getFriendSettingsByNameStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getFriendSettingsByNameStmt: %w", cerr)
+		}
+	}
+	if q.getFriendSettingsOrderByNameStmt != nil {
+		if cerr := q.getFriendSettingsOrderByNameStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getFriendSettingsOrderByNameStmt: %w", cerr)
+		}
+	}
+	if q.getFriendShowSettingsOrderByShowTimeStmt != nil {
+		if cerr := q.getFriendShowSettingsOrderByShowTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getFriendShowSettingsOrderByShowTimeStmt: %w", cerr)
+		}
+	}
+	if q.getGroupListStmt != nil {
+		if cerr := q.getGroupListStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupListStmt: %w", cerr)
+		}
+	}
+	if q.getGroupMembersByIDStmt != nil {
+		if cerr := q.getGroupMembersByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupMembersByIDStmt: %w", cerr)
+		}
+	}
+	if q.getGroupPinSettingsOrderByPinTimeStmt != nil {
+		if cerr := q.getGroupPinSettingsOrderByPinTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupPinSettingsOrderByPinTimeStmt: %w", cerr)
+		}
+	}
+	if q.getGroupRelationByIDStmt != nil {
+		if cerr := q.getGroupRelationByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupRelationByIDStmt: %w", cerr)
+		}
+	}
+	if q.getGroupRelationsIdStmt != nil {
+		if cerr := q.getGroupRelationsIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupRelationsIdStmt: %w", cerr)
+		}
+	}
+	if q.getGroupSettingsByNameStmt != nil {
+		if cerr := q.getGroupSettingsByNameStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupSettingsByNameStmt: %w", cerr)
+		}
+	}
+	if q.getGroupShowSettingsOrderByShowTimeStmt != nil {
+		if cerr := q.getGroupShowSettingsOrderByShowTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupShowSettingsOrderByShowTimeStmt: %w", cerr)
+		}
+	}
 	if q.getMessageByIDStmt != nil {
 		if cerr := q.getMessageByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getMessageByIDStmt: %w", cerr)
@@ -342,6 +554,11 @@ func (q *Queries) Close() error {
 	if q.getMessageInfoTxStmt != nil {
 		if cerr := q.getMessageInfoTxStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getMessageInfoTxStmt: %w", cerr)
+		}
+	}
+	if q.getMsgDeleteByIdStmt != nil {
+		if cerr := q.getMsgDeleteByIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getMsgDeleteByIdStmt: %w", cerr)
 		}
 	}
 	if q.getMsgsByContentStmt != nil {
@@ -364,6 +581,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getPinMsgsByRelationIDStmt: %w", cerr)
 		}
 	}
+	if q.getRelationIDByAccountIDStmt != nil {
+		if cerr := q.getRelationIDByAccountIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getRelationIDByAccountIDStmt: %w", cerr)
+		}
+	}
 	if q.getRelationIDsByAccountIDFromSettingsStmt != nil {
 		if cerr := q.getRelationIDsByAccountIDFromSettingsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getRelationIDsByAccountIDFromSettingsStmt: %w", cerr)
@@ -372,6 +594,11 @@ func (q *Queries) Close() error {
 	if q.getRlyMsgsInfoByMsgIDStmt != nil {
 		if cerr := q.getRlyMsgsInfoByMsgIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getRlyMsgsInfoByMsgIDStmt: %w", cerr)
+		}
+	}
+	if q.getSettingByIDStmt != nil {
+		if cerr := q.getSettingByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getSettingByIDStmt: %w", cerr)
 		}
 	}
 	if q.getTopMsgByRelationIDStmt != nil {
@@ -394,6 +621,16 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing offerMsgsByAccountIDAndTimeStmt: %w", cerr)
 		}
 	}
+	if q.transferIsLeaderFalseStmt != nil {
+		if cerr := q.transferIsLeaderFalseStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing transferIsLeaderFalseStmt: %w", cerr)
+		}
+	}
+	if q.transferIsLeaderTrueStmt != nil {
+		if cerr := q.transferIsLeaderTrueStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing transferIsLeaderTrueStmt: %w", cerr)
+		}
+	}
 	if q.updateAccountStmt != nil {
 		if cerr := q.updateAccountStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateAccountStmt: %w", cerr)
@@ -409,6 +646,16 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing updateApplicationStmt: %w", cerr)
 		}
 	}
+	if q.updateGroupRelationStmt != nil {
+		if cerr := q.updateGroupRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateGroupRelationStmt: %w", cerr)
+		}
+	}
+	if q.updateMsgDeleteStmt != nil {
+		if cerr := q.updateMsgDeleteStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateMsgDeleteStmt: %w", cerr)
+		}
+	}
 	if q.updateMsgPinStmt != nil {
 		if cerr := q.updateMsgPinStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateMsgPinStmt: %w", cerr)
@@ -422,6 +669,31 @@ func (q *Queries) Close() error {
 	if q.updateMsgTopStmt != nil {
 		if cerr := q.updateMsgTopStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateMsgTopStmt: %w", cerr)
+		}
+	}
+	if q.updateSettingDisturbStmt != nil {
+		if cerr := q.updateSettingDisturbStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSettingDisturbStmt: %w", cerr)
+		}
+	}
+	if q.updateSettingLeaderStmt != nil {
+		if cerr := q.updateSettingLeaderStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSettingLeaderStmt: %w", cerr)
+		}
+	}
+	if q.updateSettingNickNameStmt != nil {
+		if cerr := q.updateSettingNickNameStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSettingNickNameStmt: %w", cerr)
+		}
+	}
+	if q.updateSettingPinStmt != nil {
+		if cerr := q.updateSettingPinStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSettingPinStmt: %w", cerr)
+		}
+	}
+	if q.updateSettingShowStmt != nil {
+		if cerr := q.updateSettingShowStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateSettingShowStmt: %w", cerr)
 		}
 	}
 	if q.updateUserStmt != nil {
@@ -472,6 +744,7 @@ type Queries struct {
 	createAccountStmt                         *sql.Stmt
 	createApplicationStmt                     *sql.Stmt
 	createFriendRelationStmt                  *sql.Stmt
+	createGroupRelationStmt                   *sql.Stmt
 	createMessageStmt                         *sql.Stmt
 	createSettingStmt                         *sql.Stmt
 	createUserStmt                            *sql.Stmt
@@ -479,44 +752,77 @@ type Queries struct {
 	deleteAccountsByUserIDStmt                *sql.Stmt
 	deleteApplicationStmt                     *sql.Stmt
 	deleteFriendRelationsByAccountIDStmt      *sql.Stmt
+	deleteRelationStmt                        *sql.Stmt
+	deleteSettingStmt                         *sql.Stmt
 	deleteSettingsByAccountIDStmt             *sql.Stmt
 	deleteUserStmt                            *sql.Stmt
 	existEmailStmt                            *sql.Stmt
 	existsAccountByIDStmt                     *sql.Stmt
 	existsAccountByNameAndUserIDStmt          *sql.Stmt
 	existsApplicationByIDWithLockStmt         *sql.Stmt
+	existsFriendRelationStmt                  *sql.Stmt
+	existsFriendSettingStmt                   *sql.Stmt
 	existsGroupLeaderByAccountIDWithLockStmt  *sql.Stmt
+	existsIsLeaderStmt                        *sql.Stmt
 	existsSettingStmt                         *sql.Stmt
 	existsUserByIDStmt                        *sql.Stmt
 	getAccountByIDStmt                        *sql.Stmt
+	getAccountIDsByMsgIDStmt                  *sql.Stmt
 	getAccountIDsByRelationIDStmt             *sql.Stmt
 	getAccountIDsByUserIDStmt                 *sql.Stmt
 	getAccountsByNameStmt                     *sql.Stmt
 	getAccountsByUserIDStmt                   *sql.Stmt
+	getAcountIDsByUserIDStmt                  *sql.Stmt
 	getAllEmailStmt                           *sql.Stmt
+	getAllGroupRelationStmt                   *sql.Stmt
 	getAllRelationIDsStmt                     *sql.Stmt
+	getAllRelationOnRelationStmt              *sql.Stmt
 	getApplicationByIDStmt                    *sql.Stmt
 	getApplicationsStmt                       *sql.Stmt
+	getFriendPinSettingsOrderByPinTimeStmt    *sql.Stmt
+	getFriendRelationByIDStmt                 *sql.Stmt
 	getFriendRelationIDsByAccountIDStmt       *sql.Stmt
 	getFriendRelationIdByID1AndID1Stmt        *sql.Stmt
+	getFriendSettingsByNameStmt               *sql.Stmt
+	getFriendSettingsOrderByNameStmt          *sql.Stmt
+	getFriendShowSettingsOrderByShowTimeStmt  *sql.Stmt
+	getGroupListStmt                          *sql.Stmt
+	getGroupMembersByIDStmt                   *sql.Stmt
+	getGroupPinSettingsOrderByPinTimeStmt     *sql.Stmt
+	getGroupRelationByIDStmt                  *sql.Stmt
+	getGroupRelationsIdStmt                   *sql.Stmt
+	getGroupSettingsByNameStmt                *sql.Stmt
+	getGroupShowSettingsOrderByShowTimeStmt   *sql.Stmt
 	getMessageByIDStmt                        *sql.Stmt
 	getMessageInfoTxStmt                      *sql.Stmt
+	getMsgDeleteByIdStmt                      *sql.Stmt
 	getMsgsByContentStmt                      *sql.Stmt
 	getMsgsByContentAndRelationStmt           *sql.Stmt
 	getMsgsByRelationIDAndTimeStmt            *sql.Stmt
 	getPinMsgsByRelationIDStmt                *sql.Stmt
+	getRelationIDByAccountIDStmt              *sql.Stmt
 	getRelationIDsByAccountIDFromSettingsStmt *sql.Stmt
 	getRlyMsgsInfoByMsgIDStmt                 *sql.Stmt
+	getSettingByIDStmt                        *sql.Stmt
 	getTopMsgByRelationIDStmt                 *sql.Stmt
 	getUserByEmailStmt                        *sql.Stmt
 	getUserByIDStmt                           *sql.Stmt
 	offerMsgsByAccountIDAndTimeStmt           *sql.Stmt
+	transferIsLeaderFalseStmt                 *sql.Stmt
+	transferIsLeaderTrueStmt                  *sql.Stmt
 	updateAccountStmt                         *sql.Stmt
 	updateAccountAvatarStmt                   *sql.Stmt
 	updateApplicationStmt                     *sql.Stmt
+	updateGroupRelationStmt                   *sql.Stmt
+	updateMsgDeleteStmt                       *sql.Stmt
 	updateMsgPinStmt                          *sql.Stmt
 	updateMsgRevokeStmt                       *sql.Stmt
 	updateMsgTopStmt                          *sql.Stmt
+	updateSettingDisturbStmt                  *sql.Stmt
+	updateSettingLeaderStmt                   *sql.Stmt
+	updateSettingNickNameStmt                 *sql.Stmt
+	updateSettingPinStmt                      *sql.Stmt
+	updateSettingShowStmt                     *sql.Stmt
 	updateUserStmt                            *sql.Stmt
 }
 
@@ -528,6 +834,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		createAccountStmt:                         q.createAccountStmt,
 		createApplicationStmt:                     q.createApplicationStmt,
 		createFriendRelationStmt:                  q.createFriendRelationStmt,
+		createGroupRelationStmt:                   q.createGroupRelationStmt,
 		createMessageStmt:                         q.createMessageStmt,
 		createSettingStmt:                         q.createSettingStmt,
 		createUserStmt:                            q.createUserStmt,
@@ -535,44 +842,77 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteAccountsByUserIDStmt:                q.deleteAccountsByUserIDStmt,
 		deleteApplicationStmt:                     q.deleteApplicationStmt,
 		deleteFriendRelationsByAccountIDStmt:      q.deleteFriendRelationsByAccountIDStmt,
+		deleteRelationStmt:                        q.deleteRelationStmt,
+		deleteSettingStmt:                         q.deleteSettingStmt,
 		deleteSettingsByAccountIDStmt:             q.deleteSettingsByAccountIDStmt,
 		deleteUserStmt:                            q.deleteUserStmt,
 		existEmailStmt:                            q.existEmailStmt,
 		existsAccountByIDStmt:                     q.existsAccountByIDStmt,
 		existsAccountByNameAndUserIDStmt:          q.existsAccountByNameAndUserIDStmt,
 		existsApplicationByIDWithLockStmt:         q.existsApplicationByIDWithLockStmt,
+		existsFriendRelationStmt:                  q.existsFriendRelationStmt,
+		existsFriendSettingStmt:                   q.existsFriendSettingStmt,
 		existsGroupLeaderByAccountIDWithLockStmt:  q.existsGroupLeaderByAccountIDWithLockStmt,
+		existsIsLeaderStmt:                        q.existsIsLeaderStmt,
 		existsSettingStmt:                         q.existsSettingStmt,
 		existsUserByIDStmt:                        q.existsUserByIDStmt,
 		getAccountByIDStmt:                        q.getAccountByIDStmt,
+		getAccountIDsByMsgIDStmt:                  q.getAccountIDsByMsgIDStmt,
 		getAccountIDsByRelationIDStmt:             q.getAccountIDsByRelationIDStmt,
 		getAccountIDsByUserIDStmt:                 q.getAccountIDsByUserIDStmt,
 		getAccountsByNameStmt:                     q.getAccountsByNameStmt,
 		getAccountsByUserIDStmt:                   q.getAccountsByUserIDStmt,
+		getAcountIDsByUserIDStmt:                  q.getAcountIDsByUserIDStmt,
 		getAllEmailStmt:                           q.getAllEmailStmt,
+		getAllGroupRelationStmt:                   q.getAllGroupRelationStmt,
 		getAllRelationIDsStmt:                     q.getAllRelationIDsStmt,
+		getAllRelationOnRelationStmt:              q.getAllRelationOnRelationStmt,
 		getApplicationByIDStmt:                    q.getApplicationByIDStmt,
 		getApplicationsStmt:                       q.getApplicationsStmt,
+		getFriendPinSettingsOrderByPinTimeStmt:    q.getFriendPinSettingsOrderByPinTimeStmt,
+		getFriendRelationByIDStmt:                 q.getFriendRelationByIDStmt,
 		getFriendRelationIDsByAccountIDStmt:       q.getFriendRelationIDsByAccountIDStmt,
 		getFriendRelationIdByID1AndID1Stmt:        q.getFriendRelationIdByID1AndID1Stmt,
+		getFriendSettingsByNameStmt:               q.getFriendSettingsByNameStmt,
+		getFriendSettingsOrderByNameStmt:          q.getFriendSettingsOrderByNameStmt,
+		getFriendShowSettingsOrderByShowTimeStmt:  q.getFriendShowSettingsOrderByShowTimeStmt,
+		getGroupListStmt:                          q.getGroupListStmt,
+		getGroupMembersByIDStmt:                   q.getGroupMembersByIDStmt,
+		getGroupPinSettingsOrderByPinTimeStmt:     q.getGroupPinSettingsOrderByPinTimeStmt,
+		getGroupRelationByIDStmt:                  q.getGroupRelationByIDStmt,
+		getGroupRelationsIdStmt:                   q.getGroupRelationsIdStmt,
+		getGroupSettingsByNameStmt:                q.getGroupSettingsByNameStmt,
+		getGroupShowSettingsOrderByShowTimeStmt:   q.getGroupShowSettingsOrderByShowTimeStmt,
 		getMessageByIDStmt:                        q.getMessageByIDStmt,
 		getMessageInfoTxStmt:                      q.getMessageInfoTxStmt,
+		getMsgDeleteByIdStmt:                      q.getMsgDeleteByIdStmt,
 		getMsgsByContentStmt:                      q.getMsgsByContentStmt,
 		getMsgsByContentAndRelationStmt:           q.getMsgsByContentAndRelationStmt,
 		getMsgsByRelationIDAndTimeStmt:            q.getMsgsByRelationIDAndTimeStmt,
 		getPinMsgsByRelationIDStmt:                q.getPinMsgsByRelationIDStmt,
+		getRelationIDByAccountIDStmt:              q.getRelationIDByAccountIDStmt,
 		getRelationIDsByAccountIDFromSettingsStmt: q.getRelationIDsByAccountIDFromSettingsStmt,
 		getRlyMsgsInfoByMsgIDStmt:                 q.getRlyMsgsInfoByMsgIDStmt,
+		getSettingByIDStmt:                        q.getSettingByIDStmt,
 		getTopMsgByRelationIDStmt:                 q.getTopMsgByRelationIDStmt,
 		getUserByEmailStmt:                        q.getUserByEmailStmt,
 		getUserByIDStmt:                           q.getUserByIDStmt,
 		offerMsgsByAccountIDAndTimeStmt:           q.offerMsgsByAccountIDAndTimeStmt,
+		transferIsLeaderFalseStmt:                 q.transferIsLeaderFalseStmt,
+		transferIsLeaderTrueStmt:                  q.transferIsLeaderTrueStmt,
 		updateAccountStmt:                         q.updateAccountStmt,
 		updateAccountAvatarStmt:                   q.updateAccountAvatarStmt,
 		updateApplicationStmt:                     q.updateApplicationStmt,
+		updateGroupRelationStmt:                   q.updateGroupRelationStmt,
+		updateMsgDeleteStmt:                       q.updateMsgDeleteStmt,
 		updateMsgPinStmt:                          q.updateMsgPinStmt,
 		updateMsgRevokeStmt:                       q.updateMsgRevokeStmt,
 		updateMsgTopStmt:                          q.updateMsgTopStmt,
+		updateSettingDisturbStmt:                  q.updateSettingDisturbStmt,
+		updateSettingLeaderStmt:                   q.updateSettingLeaderStmt,
+		updateSettingNickNameStmt:                 q.updateSettingNickNameStmt,
+		updateSettingPinStmt:                      q.updateSettingPinStmt,
+		updateSettingShowStmt:                     q.updateSettingShowStmt,
 		updateUserStmt:                            q.updateUserStmt,
 	}
 }

@@ -50,3 +50,30 @@ func (store *MySQLDB) RevokeMsgWithTx(ctx context.Context, msgID int64, isPin, i
 		return err
 	})
 }
+
+func (store *MySQLDB) DeleteMsgWithTx(ctx context.Context, msgID int64, isDel int32) error {
+	return store.execTx(ctx, func(queries *db.Queries) error {
+		var err error
+		err = tool.DoThat(err, func() error {
+			IsDelete, err := queries.GetMsgDeleteById(ctx, msgID)
+			if IsDelete == 0 {
+				err = tool.DoThat(err, func() error {
+					return queries.UpdateMsgDelete(ctx, &db.UpdateMsgDeleteParams{
+						ID:       msgID,
+						IsDelete: isDel,
+					})
+				})
+				return err
+			} else {
+				err = tool.DoThat(err, func() error {
+					return queries.UpdateMsgDelete(ctx, &db.UpdateMsgDeleteParams{
+						ID:       msgID,
+						IsDelete: 2,
+					})
+				})
+				return err
+			}
+		})
+		return err
+	})
+}

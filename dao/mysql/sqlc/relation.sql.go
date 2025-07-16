@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const createFriendRelation = `-- name: CreateFriendRelation :exec
@@ -22,6 +23,22 @@ type CreateFriendRelationParams struct {
 
 func (q *Queries) CreateFriendRelation(ctx context.Context, arg *CreateFriendRelationParams) error {
 	_, err := q.exec(ctx, q.createFriendRelationStmt, createFriendRelation, arg.Account1ID, arg.Account2ID)
+	return err
+}
+
+const createGroupRelation = `-- name: CreateGroupRelation :exec
+insert into relations (relation,name,description,avatar)
+    values ('group', ?,?,?)
+`
+
+type CreateGroupRelationParams struct {
+	Name        sql.NullString
+	Description sql.NullString
+	Avatar      sql.NullString
+}
+
+func (q *Queries) CreateGroupRelation(ctx context.Context, arg *CreateGroupRelationParams) error {
+	_, err := q.exec(ctx, q.createGroupRelationStmt, createGroupRelation, arg.Name, arg.Description, arg.Avatar)
 	return err
 }
 
@@ -40,6 +57,37 @@ type DeleteFriendRelationsByAccountIDParams struct {
 func (q *Queries) DeleteFriendRelationsByAccountID(ctx context.Context, arg *DeleteFriendRelationsByAccountIDParams) error {
 	_, err := q.exec(ctx, q.deleteFriendRelationsByAccountIDStmt, deleteFriendRelationsByAccountID, arg.Account1ID, arg.Account2ID)
 	return err
+}
+
+const deleteRelation = `-- name: DeleteRelation :exec
+delete
+from relations
+where id = ?
+`
+
+func (q *Queries) DeleteRelation(ctx context.Context, id int64) error {
+	_, err := q.exec(ctx, q.deleteRelationStmt, deleteRelation, id)
+	return err
+}
+
+const existsFriendRelation = `-- name: ExistsFriendRelation :one
+select exists(select 1
+              from relations
+              where relation = 'friend'
+                and account1_id = ?
+               and account2_id = ?)
+`
+
+type ExistsFriendRelationParams struct {
+	Account1ID sql.NullInt64
+	Account2ID sql.NullInt64
+}
+
+func (q *Queries) ExistsFriendRelation(ctx context.Context, arg *ExistsFriendRelationParams) (bool, error) {
+	row := q.queryRow(ctx, q.existsFriendRelationStmt, existsFriendRelation, arg.Account1ID, arg.Account2ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const getAccountIDsByRelationID = `-- name: GetAccountIDsByRelationID :many
@@ -61,6 +109,35 @@ func (q *Queries) GetAccountIDsByRelationID(ctx context.Context, relationID int6
 			return nil, err
 		}
 		items = append(items, account_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllGroupRelation = `-- name: GetAllGroupRelation :many
+select id
+from relations
+where relation = 'group'
+`
+
+func (q *Queries) GetAllGroupRelation(ctx context.Context) ([]int64, error) {
+	rows, err := q.query(ctx, q.getAllGroupRelationStmt, getAllGroupRelation)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -97,6 +174,65 @@ func (q *Queries) GetAllRelationIDs(ctx context.Context) ([]int64, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getAllRelationOnRelation = `-- name: GetAllRelationOnRelation :many
+select id, relation, name, description, avatar, account1_id, account2_id, created_at
+from relations
+`
+
+func (q *Queries) GetAllRelationOnRelation(ctx context.Context) ([]*Relation, error) {
+	rows, err := q.query(ctx, q.getAllRelationOnRelationStmt, getAllRelationOnRelation)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Relation{}
+	for rows.Next() {
+		var i Relation
+		if err := rows.Scan(
+			&i.ID,
+			&i.Relation,
+			&i.Name,
+			&i.Description,
+			&i.Avatar,
+			&i.Account1ID,
+			&i.Account2ID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFriendRelationByID = `-- name: GetFriendRelationByID :one
+select account1_id,
+       account2_id,
+       created_at
+from relations
+where relation = 'friend'
+  and id = ?
+`
+
+type GetFriendRelationByIDRow struct {
+	Account1ID sql.NullInt64
+	Account2ID sql.NullInt64
+	CreatedAt  time.Time
+}
+
+func (q *Queries) GetFriendRelationByID(ctx context.Context, id int64) (*GetFriendRelationByIDRow, error) {
+	row := q.queryRow(ctx, q.getFriendRelationByIDStmt, getFriendRelationByID, id)
+	var i GetFriendRelationByIDRow
+	err := row.Scan(&i.Account1ID, &i.Account2ID, &i.CreatedAt)
+	return &i, err
 }
 
 const getFriendRelationIDsByAccountID = `-- name: GetFriendRelationIDsByAccountID :many
@@ -148,4 +284,327 @@ func (q *Queries) GetFriendRelationIdByID1AndID1(ctx context.Context, arg *GetFr
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getGroupList = `-- name: GetGroupList :many
+select s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self,
+       r.id as relation_id,
+       r.name as group_name,
+       r.description,
+       r.avatar as group_avatar,
+       count(*) over () as total
+from (select relation_id,
+    nick_name,
+    is_not_disturb,
+    is_pin,
+    pin_time,
+    is_show,
+    last_show,
+    is_self
+    from settings,
+    relations
+    where settings.account_id = ?
+    and settings.relation_id = relations.id
+    and relations.relation = 'group') as s,
+    relations r
+where r.id = (select s.relation_id from settings where relation_id = s.relation_id and (settings.account_id = ?))
+order by s.last_show
+`
+
+type GetGroupListParams struct {
+	AccountID   int64
+	AccountID_2 int64
+}
+
+type GetGroupListRow struct {
+	RelationID   int64
+	NickName     string
+	IsNotDisturb bool
+	IsPin        bool
+	PinTime      time.Time
+	IsShow       bool
+	LastShow     time.Time
+	IsSelf       bool
+	RelationID_2 int64
+	GroupName    sql.NullString
+	Description  sql.NullString
+	GroupAvatar  sql.NullString
+	Total        interface{}
+}
+
+func (q *Queries) GetGroupList(ctx context.Context, arg *GetGroupListParams) ([]*GetGroupListRow, error) {
+	rows, err := q.query(ctx, q.getGroupListStmt, getGroupList, arg.AccountID, arg.AccountID_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetGroupListRow{}
+	for rows.Next() {
+		var i GetGroupListRow
+		if err := rows.Scan(
+			&i.RelationID,
+			&i.NickName,
+			&i.IsNotDisturb,
+			&i.IsPin,
+			&i.PinTime,
+			&i.IsShow,
+			&i.LastShow,
+			&i.IsSelf,
+			&i.RelationID_2,
+			&i.GroupName,
+			&i.Description,
+			&i.GroupAvatar,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getGroupMembersByID = `-- name: GetGroupMembersByID :many
+select a.id, a.name, a.avatar, s.nick_name, s.is_leader
+from accounts a
+         left join settings s on a.id = s.account_id
+where s.relation_id = ?
+limit ? offset ?
+`
+
+type GetGroupMembersByIDParams struct {
+	RelationID int64
+	Limit      int32
+	Offset     int32
+}
+
+type GetGroupMembersByIDRow struct {
+	ID       int64
+	Name     string
+	Avatar   string
+	NickName sql.NullString
+	IsLeader sql.NullBool
+}
+
+func (q *Queries) GetGroupMembersByID(ctx context.Context, arg *GetGroupMembersByIDParams) ([]*GetGroupMembersByIDRow, error) {
+	rows, err := q.query(ctx, q.getGroupMembersByIDStmt, getGroupMembersByID, arg.RelationID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetGroupMembersByIDRow{}
+	for rows.Next() {
+		var i GetGroupMembersByIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Avatar,
+			&i.NickName,
+			&i.IsLeader,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getGroupRelationByID = `-- name: GetGroupRelationByID :one
+select id,
+       account1_id,
+       account2_id,
+       name,
+        description,
+        avatar,
+        created_at
+from relations
+where relation = 'group'
+  and id = ?
+`
+
+type GetGroupRelationByIDRow struct {
+	ID          int64
+	Account1ID  sql.NullInt64
+	Account2ID  sql.NullInt64
+	Name        sql.NullString
+	Description sql.NullString
+	Avatar      sql.NullString
+	CreatedAt   time.Time
+}
+
+func (q *Queries) GetGroupRelationByID(ctx context.Context, id int64) (*GetGroupRelationByIDRow, error) {
+	row := q.queryRow(ctx, q.getGroupRelationByIDStmt, getGroupRelationByID, id)
+	var i GetGroupRelationByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Account1ID,
+		&i.Account2ID,
+		&i.Name,
+		&i.Description,
+		&i.Avatar,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
+const getGroupRelationsId = `-- name: GetGroupRelationsId :one
+select LAST_INSERT_ID()
+from relations
+`
+
+func (q *Queries) GetGroupRelationsId(ctx context.Context) (int64, error) {
+	row := q.queryRow(ctx, q.getGroupRelationsIdStmt, getGroupRelationsId)
+	var last_insert_id int64
+	err := row.Scan(&last_insert_id)
+	return last_insert_id, err
+}
+
+const getGroupSettingsByName = `-- name: GetGroupSettingsByName :many
+select s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self,
+       r.id as relation_id,
+       name as group_name,
+       avatar as group_avatar,
+       description,
+       count(*) over () as total
+from (select relation_id,
+    nick_name,
+    is_not_disturb,
+    is_pin,
+    pin_time,
+    is_show,
+    last_show,
+    is_self
+    from settings,
+    relations
+    where settings.account_id = ?
+    and settings.relation_id = relations.id
+    and relations.relation = 'group') as s,
+    relations r
+where r.id = (select s.relation_id from settings where relation_id = s.relation_id and (settings.account_id = ?))
+  and ((name like CONCAT('%' ,?, '%')))
+order by name
+limit ? offset ?
+`
+
+type GetGroupSettingsByNameParams struct {
+	AccountID   int64
+	AccountID_2 int64
+	CONCAT      interface{}
+	Limit       int32
+	Offset      int32
+}
+
+type GetGroupSettingsByNameRow struct {
+	RelationID   int64
+	NickName     string
+	IsNotDisturb bool
+	IsPin        bool
+	PinTime      time.Time
+	IsShow       bool
+	LastShow     time.Time
+	IsSelf       bool
+	RelationID_2 int64
+	GroupName    sql.NullString
+	GroupAvatar  sql.NullString
+	Description  sql.NullString
+	Total        interface{}
+}
+
+func (q *Queries) GetGroupSettingsByName(ctx context.Context, arg *GetGroupSettingsByNameParams) ([]*GetGroupSettingsByNameRow, error) {
+	rows, err := q.query(ctx, q.getGroupSettingsByNameStmt, getGroupSettingsByName,
+		arg.AccountID,
+		arg.AccountID_2,
+		arg.CONCAT,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetGroupSettingsByNameRow{}
+	for rows.Next() {
+		var i GetGroupSettingsByNameRow
+		if err := rows.Scan(
+			&i.RelationID,
+			&i.NickName,
+			&i.IsNotDisturb,
+			&i.IsPin,
+			&i.PinTime,
+			&i.IsShow,
+			&i.LastShow,
+			&i.IsSelf,
+			&i.RelationID_2,
+			&i.GroupName,
+			&i.GroupAvatar,
+			&i.Description,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRelationIDByAccountID = `-- name: GetRelationIDByAccountID :one
+select id
+from relations
+where account1_id = ?
+  and account2_id = ?
+`
+
+type GetRelationIDByAccountIDParams struct {
+	Account1ID sql.NullInt64
+	Account2ID sql.NullInt64
+}
+
+func (q *Queries) GetRelationIDByAccountID(ctx context.Context, arg *GetRelationIDByAccountIDParams) (int64, error) {
+	row := q.queryRow(ctx, q.getRelationIDByAccountIDStmt, getRelationIDByAccountID, arg.Account1ID, arg.Account2ID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const updateGroupRelation = `-- name: UpdateGroupRelation :exec
+update relations
+set name=?,
+       description=?,
+       avatar=?
+where relation = 'group'
+  and id = ?
+`
+
+type UpdateGroupRelationParams struct {
+	Name        sql.NullString
+	Description sql.NullString
+	Avatar      sql.NullString
+	ID          int64
+}
+
+func (q *Queries) UpdateGroupRelation(ctx context.Context, arg *UpdateGroupRelationParams) error {
+	_, err := q.exec(ctx, q.updateGroupRelationStmt, updateGroupRelation,
+		arg.Name,
+		arg.Description,
+		arg.Avatar,
+		arg.ID,
+	)
+	return err
 }

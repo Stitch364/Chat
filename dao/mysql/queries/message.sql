@@ -14,7 +14,7 @@ WHERE id = LAST_INSERT_ID();
 
 -- name: GetMessageByID :one
 select id, notify_type, msg_type, msg_content, coalesce(msg_extend,'[]'), file_id, account_id,
-       rly_msg_id, relation_id, create_at, is_revoke, is_top, is_pin, pin_time, read_ids
+       rly_msg_id, relation_id, create_at, is_revoke, is_top, is_pin, pin_time, read_ids, is_delete
 from messages
 where id = ?
 limit 1;
@@ -35,6 +35,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        count(*) over () as total,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count
 from messages m1
@@ -59,6 +60,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        count(*) over () as total,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = m1.relation_id) as reply_count
 from messages m1
@@ -81,6 +83,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        count(*) over () as total
 from messages m1
@@ -103,6 +106,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        count(*) over () as total
 from messages m1
@@ -120,6 +124,7 @@ select m1.id,
        m1.account_id,
        m1.relation_id,
        m1.create_at,
+       m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = s.relation_id and s.account_id = ?
@@ -138,6 +143,7 @@ select m1.id,
        m1.account_id,
        m1.relation_id,
        m1.create_at,
+       m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = ? and m1.relation_id = s.relation_id and s.account_id = ?
@@ -180,4 +186,24 @@ where id = ?;
 -- name: UpdateMsgRevoke :exec
 update messages
 set is_revoke = ?
+where id = ?;
+
+-- name: UpdateMsgDelete :exec
+update messages
+set is_delete = ?
+where id = ?;
+
+-- name: GetAccountIDsByMsgID :one
+select account1_id, account2_id
+from relations r
+where r.id = (
+    select relation_id
+    from messages m
+    where m.id = ?
+)
+limit 1;
+
+-- name: GetMsgDeleteById :one
+select  is_delete
+from messages
 where id = ?;

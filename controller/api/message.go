@@ -33,10 +33,12 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context) {
 	}
 	//2.业务处理
 	limit, offset := global.Page.GetPageSizeAndOffset(ctx.Request)
+	//fmt.Println("params: ", params)
+	//fmt.Println("params.LastTime: ", time.Unix(params.LastTime/1000, 0))
 	result, err := logic.Logics.Message.GetMsgsByRelationIDAndTime(ctx, model.GetMsgsByRelationIDAndTime{
 		AccountID:  content.ID,
 		RelationID: params.RelationID,
-		LastTime:   time.Unix(int64(params.LastTime), 0),
+		LastTime:   time.Unix(params.LastTime/1000, 0),
 		Limit:      limit,
 		Offset:     offset,
 	})
@@ -148,6 +150,23 @@ func (message) RevokeMsg(ctx *gin.Context) {
 		return
 	}
 	err := logic.Logics.Message.RevokeMsg(ctx, content.ID, params.ID)
+	reply.Reply(err)
+}
+
+func (message) DeleteMsg(ctx *gin.Context) {
+	reply := app.NewResponse(ctx)
+	//消息ID
+	params := new(request.ParamDeleteMsg)
+	if err := ctx.ShouldBindJSON(params); err != nil {
+		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
+		return
+	}
+	content, ok := middlewares.GetTokenContent(ctx)
+	if !ok || content.TokenType != model.AccountToken {
+		reply.Reply(errcodes.AuthNotExist)
+		return
+	}
+	err := logic.Logics.Message.DeleteMsg(ctx, content.ID, params.ID)
 	reply.Reply(err)
 }
 

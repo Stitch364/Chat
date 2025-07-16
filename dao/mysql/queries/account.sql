@@ -74,3 +74,7 @@ from (select id, name, avatar, gender from accounts where accounts.name like CON
                                     (r.account1_id = ? and r.account2_id = a.id)))
 limit ? offset ?;
 
+-- name: GetAcountIDsByUserID :many
+select id
+from accounts
+where user_id = ?;

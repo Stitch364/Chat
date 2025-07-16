@@ -4,56 +4,14 @@ import (
 	"chat/global"
 	"chat/routs/router"
 	"chat/setting"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	//"web_app/dao/mysql"
-	//"web_app/dao/redis"
-	//"web_app/logger"
-	//"web_app/routs"
-	//"web_app/setting"
-
 	"go.uber.org/zap"
 )
 
 //Go Web开发较通用的脚手架模板
 
 func main() {
-	//if len(os.Args) < 2 {
-	//	fmt.Println("need config file.eg")
-	//	return
-	//}
-	//// 1. 加载配置
-	//if err := setting.Init(os.Args[1]); err != nil {
-	//	fmt.Println("init settings failed, err:", err)
-	//	return
-	//}
-	//// 2. 初始化日志
-	//if err := logger.Init(setting.Conf.LogConfig); err != nil {
-	//	fmt.Println("init settings failed, err:", err)
-	//	return
-	//}
-	////把缓冲区的文件增加到日志里
-	//defer func(l *zap.Logger) {
-	//	err := l.Sync()
-	//	if err != nil {
-	//		zap.L().Error("sync logger failed", zap.Error(err))
-	//	}
-	//}(zap.L())
-	//
-	////zap.L().
-	//// 3. 初始化MySQL连接
-	//if err := mysql.Init(setting.Conf.MySQLConfig); err != nil {
-	//	fmt.Println("init settings failed, err:", err)
-	//	return
-	//}
-	//defer mysql.Close()
-	//// 4. 初始化Redis连接
-	//if err := redis.Init(setting.Conf.RedisConfig); err != nil {
-	//	fmt.Println("init settings failed, err:", err)
-	//	return
-	//}
-	//defer redis.Close()
-	//// 5. 注册路由
-	//r := routs.Setup()
 
 	//1. 初始化项目（配置加载，日志、数据库，雪花算法...初始化等等）
 	setting.Inits()
@@ -63,8 +21,45 @@ func main() {
 	}
 
 	//注册成路由
-	r := router.NewRouter()
+	r, ws := router.NewRouter()
 	_ = r.Run(":8080")
+	//sever := http.Server{
+	//	Addr:           global.PublicSetting.Server.HttpPort, //端口号
+	//	Handler:        r,                                    //路由处理器
+	//	MaxHeaderBytes: 1 << 20,                              //最大请求头大小（1MB）
+	//	//设置合适的 MaxHeaderBytes 值，可以确保服务器能够有效地处理请求头，避免不必要的资源浪费或潜在的安全风险
+	//}
+	//global.Logger.Info("Server started!") //输出日志，服务器已启动
+	//fmt.Println("AppName:", global.PublicSetting.App.Name, "Version:", global.PublicSetting.App.Version, "Address:", global.PublicSetting.Server.HttpPort, "RunMode:", global.PublicSetting.Server.RunMode)
+
+	errChan := make(chan error, 1)
+	defer close(errChan) //延迟关闭错误通道
+
+	//go func() {
+	//	//启动 HTTP 服务器
+	//	err := sever.ListenAndServe()
+	//	if err != nil {
+	//		errChan <- err //将错误发送到错误通道
+	//	}
+	//}()
+
+	defer ws.Close()
+	// 接收并处理网络连接
+	if err := ws.Serve(); err != nil {
+		fmt.Println("Socket.IO server error:", err)
+		errChan <- err
+	}
+
+	//// 启动 Socket.IO 服务器
+	//go func() {
+	//	defer ws.Close()
+	//	// 接收并处理网络连接
+	//	fmt.Println(111)
+	//	if err := ws.Serve(); err != nil {
+	//		errChan <- err
+	//	}
+	//	fmt.Println(222)
+	//}()
 
 	//// 6. 启动服务（优雅关机）
 	//srv := &http.Server{

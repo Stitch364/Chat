@@ -43,9 +43,32 @@ func (q *Queries) CreateMessage(ctx context.Context, arg *CreateMessageParams) e
 	return err
 }
 
+const getAccountIDsByMsgID = `-- name: GetAccountIDsByMsgID :one
+select account1_id, account2_id
+from relations r
+where r.id = (
+    select relation_id
+    from messages m
+    where m.id = ?
+)
+limit 1
+`
+
+type GetAccountIDsByMsgIDRow struct {
+	Account1ID sql.NullInt64
+	Account2ID sql.NullInt64
+}
+
+func (q *Queries) GetAccountIDsByMsgID(ctx context.Context, id int64) (*GetAccountIDsByMsgIDRow, error) {
+	row := q.queryRow(ctx, q.getAccountIDsByMsgIDStmt, getAccountIDsByMsgID, id)
+	var i GetAccountIDsByMsgIDRow
+	err := row.Scan(&i.Account1ID, &i.Account2ID)
+	return &i, err
+}
+
 const getMessageByID = `-- name: GetMessageByID :one
 select id, notify_type, msg_type, msg_content, coalesce(msg_extend,'[]'), file_id, account_id,
-       rly_msg_id, relation_id, create_at, is_revoke, is_top, is_pin, pin_time, read_ids
+       rly_msg_id, relation_id, create_at, is_revoke, is_top, is_pin, pin_time, read_ids, is_delete
 from messages
 where id = ?
 limit 1
@@ -70,6 +93,7 @@ func (q *Queries) GetMessageByID(ctx context.Context, id int64) (*Message, error
 		&i.IsPin,
 		&i.PinTime,
 		&i.ReadIds,
+		&i.IsDelete,
 	)
 	return &i, err
 }
@@ -101,6 +125,19 @@ func (q *Queries) GetMessageInfoTx(ctx context.Context) (*GetMessageInfoTxRow, e
 	return &i, err
 }
 
+const getMsgDeleteById = `-- name: GetMsgDeleteById :one
+select  is_delete
+from messages
+where id = ?
+`
+
+func (q *Queries) GetMsgDeleteById(ctx context.Context, id int64) (int32, error) {
+	row := q.queryRow(ctx, q.getMsgDeleteByIdStmt, getMsgDeleteById, id)
+	var is_delete int32
+	err := row.Scan(&is_delete)
+	return is_delete, err
+}
+
 const getMsgsByContent = `-- name: GetMsgsByContent :many
 select m1.id,
        m1.notify_type,
@@ -111,6 +148,7 @@ select m1.id,
        m1.account_id,
        m1.relation_id,
        m1.create_at,
+       m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = s.relation_id and s.account_id = ?
@@ -137,6 +175,7 @@ type GetMsgsByContentRow struct {
 	AccountID  sql.NullInt64
 	RelationID int64
 	CreateAt   time.Time
+	IsDelete   int32
 	Total      interface{}
 }
 
@@ -164,6 +203,7 @@ func (q *Queries) GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentPar
 			&i.AccountID,
 			&i.RelationID,
 			&i.CreateAt,
+			&i.IsDelete,
 			&i.Total,
 		); err != nil {
 			return nil, err
@@ -189,6 +229,7 @@ select m1.id,
        m1.account_id,
        m1.relation_id,
        m1.create_at,
+       m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = ? and m1.relation_id = s.relation_id and s.account_id = ?
@@ -216,6 +257,7 @@ type GetMsgsByContentAndRelationRow struct {
 	AccountID  sql.NullInt64
 	RelationID int64
 	CreateAt   time.Time
+	IsDelete   int32
 	Total      interface{}
 }
 
@@ -244,6 +286,7 @@ func (q *Queries) GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsB
 			&i.AccountID,
 			&i.RelationID,
 			&i.CreateAt,
+			&i.IsDelete,
 			&i.Total,
 		); err != nil {
 			return nil, err
@@ -275,6 +318,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        count(*) over () as total,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count
 from messages m1
@@ -308,6 +352,7 @@ type GetMsgsByRelationIDAndTimeRow struct {
 	IsPin      bool
 	PinTime    time.Time
 	ReadIds    json.RawMessage
+	IsDelete   int32
 	Total      interface{}
 	ReplyCount int64
 }
@@ -343,6 +388,7 @@ func (q *Queries) GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsBy
 			&i.IsPin,
 			&i.PinTime,
 			&i.ReadIds,
+			&i.IsDelete,
 			&i.Total,
 			&i.ReplyCount,
 		); err != nil {
@@ -374,6 +420,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        count(*) over () as total
 from messages m1
@@ -404,6 +451,7 @@ type GetPinMsgsByRelationIDRow struct {
 	IsPin      bool
 	PinTime    time.Time
 	ReadIds    json.RawMessage
+	IsDelete   int32
 	ReplyCount int64
 	Total      interface{}
 }
@@ -437,6 +485,7 @@ func (q *Queries) GetPinMsgsByRelationID(ctx context.Context, arg *GetPinMsgsByR
 			&i.IsPin,
 			&i.PinTime,
 			&i.ReadIds,
+			&i.IsDelete,
 			&i.ReplyCount,
 			&i.Total,
 		); err != nil {
@@ -468,6 +517,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        count(*) over () as total
 from messages m1
@@ -499,6 +549,7 @@ type GetRlyMsgsInfoByMsgIDRow struct {
 	IsPin      bool
 	PinTime    time.Time
 	ReadIds    json.RawMessage
+	IsDelete   int32
 	ReplyCount int64
 	Total      interface{}
 }
@@ -533,6 +584,7 @@ func (q *Queries) GetRlyMsgsInfoByMsgID(ctx context.Context, arg *GetRlyMsgsInfo
 			&i.IsPin,
 			&i.PinTime,
 			&i.ReadIds,
+			&i.IsDelete,
 			&i.ReplyCount,
 			&i.Total,
 		); err != nil {
@@ -635,6 +687,7 @@ select m1.id,
        m1.is_pin,
        m1.pin_time,
        m1.read_ids,
+       m1.is_delete,
        count(*) over () as total,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = m1.relation_id) as reply_count
 from messages m1
@@ -666,6 +719,7 @@ type OfferMsgsByAccountIDAndTimeRow struct {
 	IsPin      bool
 	PinTime    time.Time
 	ReadIds    json.RawMessage
+	IsDelete   int32
 	Total      interface{}
 	ReplyCount int64
 }
@@ -700,6 +754,7 @@ func (q *Queries) OfferMsgsByAccountIDAndTime(ctx context.Context, arg *OfferMsg
 			&i.IsPin,
 			&i.PinTime,
 			&i.ReadIds,
+			&i.IsDelete,
 			&i.Total,
 			&i.ReplyCount,
 		); err != nil {
@@ -714,6 +769,22 @@ func (q *Queries) OfferMsgsByAccountIDAndTime(ctx context.Context, arg *OfferMsg
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateMsgDelete = `-- name: UpdateMsgDelete :exec
+update messages
+set is_delete = ?
+where id = ?
+`
+
+type UpdateMsgDeleteParams struct {
+	IsDelete int32
+	ID       int64
+}
+
+func (q *Queries) UpdateMsgDelete(ctx context.Context, arg *UpdateMsgDeleteParams) error {
+	_, err := q.exec(ctx, q.updateMsgDeleteStmt, updateMsgDelete, arg.IsDelete, arg.ID)
+	return err
 }
 
 const updateMsgPin = `-- name: UpdateMsgPin :exec

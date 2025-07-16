@@ -86,7 +86,7 @@ func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 in
 	if myerr != nil {
 		return myerr
 	}
-	if apply.Status == db.ApplicationsStatusValue2 {
+	if apply.Status == db.ApplicationsStatusValue2 || apply.Status == db.ApplicationsStatusValue1 {
 		return errcodes.ApplicationRepeatOpt
 	}
 	//获取两人的账号信息
@@ -100,7 +100,6 @@ func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 in
 	}
 	//同意后需要创建两人好友关系，创建两人互相的设置，推送消息
 	msgInfo, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
-	//_, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
 	if err != nil {
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return errcode.ErrServer

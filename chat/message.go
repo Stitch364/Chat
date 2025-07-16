@@ -18,8 +18,8 @@ import (
 type message struct {
 }
 
-// SengMsg 发送消息
-func (message) SengMsg(ctx context.Context, params model.HandleSendMsg) (*client.HandleSendMsgRly, errcode.Err) {
+// SendMsg 发送消息
+func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*client.HandleSendMsgRly, errcode.Err) {
 	//判断权限
 	ok, myErr := logic.ExistsSetting(ctx, params.AccountID, params.RelationID)
 	if myErr != nil {

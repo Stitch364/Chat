@@ -1,3 +1,6 @@
 
 记录错误信息
     global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+
+setting.sql报错部分
+(select account_id from settings where relation_id = s.relation_id and (account_id != ? or s.is_self = true))

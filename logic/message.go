@@ -51,6 +51,7 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 		return &reply.ParamGetMsgsRelationIDAndTime{List: []*reply.ParamMsgInfoWithRly{}}, nil
 	}
 	result := make([]*reply.ParamMsgInfoWithRly, 0, len(data))
+	var DelMsgSum int64 = 0
 	for _, v := range data {
 		var content string
 		var extend *model.MsgExtend
@@ -91,6 +92,15 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 				IsRevoked:  rlyMsgInfo.IsRevoke,
 			}
 		}
+		//不显示自己删除的消息
+		if params.AccountID == v.AccountID.Int64 && v.IsDelete == 1 || v.IsDelete == 2 {
+			DelMsgSum++
+			continue
+		}
+		if params.AccountID != v.AccountID.Int64 && v.IsDelete == -1 || v.IsDelete == 2 {
+			DelMsgSum++
+			continue
+		}
 		result = append(result, &reply.ParamMsgInfoWithRly{
 			ParamMsgInfo: reply.ParamMsgInfo{
 				ID:         v.ID,
@@ -112,7 +122,7 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 			RlyMsg: rlyMsg,
 		})
 	}
-	return &reply.ParamGetMsgsRelationIDAndTime{List: result, Total: TotalToPageTotal(data[0].Total.(int64), params.Limit)}, nil
+	return &reply.ParamGetMsgsRelationIDAndTime{List: result, Total: TotalToPageTotal(data[0].Total.(int64), params.Limit) - DelMsgSum}, nil
 }
 
 func GetMsgInfoByID(ctx context.Context, msgID int64) (*db.Message, errcode.Err) {
@@ -269,11 +279,21 @@ func getMsgsByContentAndRelation(ctx *gin.Context, params *db.GetMsgsByContentAn
 		return &reply.ParamGetMsgsByContent{List: []*reply.ParamBriefMsgInfo{}}, nil
 	}
 	result := make([]*reply.ParamBriefMsgInfo, 0, len(data))
+	var DelMsgSum int64 = 0
 	for _, v := range data {
 		var extend *model.MsgExtend
 		extend, myErr = model.JsonToExtend(v.MsgExtend)
 		if myErr != nil {
 			global.Logger.Error(myErr.Error(), zap.Any("msgExtend", v.MsgExtend))
+			continue
+		}
+		//不显示自己删除的消息
+		if params.AccountID == v.AccountID.Int64 && v.IsDelete == 1 || v.IsDelete == 2 {
+			DelMsgSum++
+			continue
+		}
+		if params.AccountID != v.AccountID.Int64 && v.IsDelete == -1 || v.IsDelete == 2 {
+			DelMsgSum++
 			continue
 		}
 		result = append(result, &reply.ParamBriefMsgInfo{
@@ -288,7 +308,10 @@ func getMsgsByContentAndRelation(ctx *gin.Context, params *db.GetMsgsByContentAn
 			CreateAt:   v.CreateAt,
 		})
 	}
-	return &reply.ParamGetMsgsByContent{List: result, Total: TotalToPageTotal(data[0].Total.(int64), params.Limit)}, nil
+	return &reply.ParamGetMsgsByContent{
+		List:  result,
+		Total: TotalToPageTotal(data[0].Total.(int64)-DelMsgSum, params.Limit),
+	}, nil
 }
 
 // GetMsgsByContent 从所有用户消息中查和从指定用户消息中查
@@ -322,10 +345,20 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 	}
 	result := make([]*reply.ParamBriefMsgInfo, 0, len(data))
 	//格式转换
+	var DelMsgSum int64 = 0
 	for _, v := range data {
 		extend, myErr := model.JsonToExtend(v.MsgExtend)
 		if myErr != nil {
 			global.Logger.Error(myErr.Error(), zap.Any("msgExtend", v.MsgExtend))
+			continue
+		}
+		//不显示自己删除的消息
+		if accountID == v.AccountID.Int64 && v.IsDelete == 1 || v.IsDelete == 2 {
+			DelMsgSum++
+			continue
+		}
+		if accountID != v.AccountID.Int64 && v.IsDelete == -1 || v.IsDelete == 2 {
+			DelMsgSum++
 			continue
 		}
 		result = append(result, &reply.ParamBriefMsgInfo{
@@ -342,7 +375,7 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 	}
 	return &reply.ParamGetMsgsByContent{
 		List:  result,
-		Total: TotalToPageTotal(data[0].Total.(int64), limit),
+		Total: TotalToPageTotal(data[0].Total.(int64)-DelMsgSum, limit),
 	}, nil
 }
 
@@ -487,6 +520,34 @@ func (message) RevokeMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
 			global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 			reTry("RevokeMsg", f)
 		}
+	}
+	return nil
+}
+
+func (message) DeleteMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
+	var Isdel int32
+	msgInfo, err := GetMsgInfoByID(ctx, msgID)
+	if err != nil {
+		return err
+	}
+	// 检查是删除自己发的消息还是别人发的消息
+	if msgInfo.IsRevoke {
+		return errcodes.MsgAlreadyRevoke
+	}
+	//发消息人不是自己
+	fmt.Println(msgInfo.AccountID.Int64)
+	fmt.Println(accountID)
+	if msgInfo.AccountID.Int64 != accountID {
+		Isdel = -1
+	} else {
+		//发消息人是自己
+		Isdel = 1
+	}
+
+	myErr := dao.Database.DB.DeleteMsgWithTx(ctx, msgID, Isdel)
+	if myErr != nil {
+		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
+		return errcode.ErrServer
 	}
 	return nil
 }

@@ -107,6 +107,7 @@ create table messages
     pin_time timestamp not null default now(), -- pin时间
     read_ids json, -- 已读用户 id 集合 默认是空的json数组
     #msg_content_tsy tsvector, -- 消息分词
+    is_delete int not null default 0,
     check (notify_type = 'common' or (notify_type = 'system' and account_id is null)), -- 系统消息时发送账号 id 为 null
     check (msg_type = 'text' or (msg_type = 'file' and file_id is not null)) -- 文件消息时文件 id 不能为 null
 );

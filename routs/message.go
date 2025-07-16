@@ -18,6 +18,7 @@ func (message) Init(router *gin.RouterGroup) {
 			update.PUT("pin", api.Apis.Message.UpdateMsgPin)
 			update.PUT("top", api.Apis.Message.UpdateMsgTop)
 			update.PUT("revoke", api.Apis.Message.RevokeMsg)
+			update.PUT("delete", api.Apis.Message.DeleteMsg)
 		}
 		info := r.Group("info")
 		{
@@ -25,7 +26,7 @@ func (message) Init(router *gin.RouterGroup) {
 		}
 		list := r.Group("list")
 		{
-			list.GET("time", api.Apis.Message.GetMsgsByRelationIDAndTime)
+			list.POST("time", api.Apis.Message.GetMsgsByRelationIDAndTime)
 			//list.GET("offer", api.Apis.Message.OfferMsgsByAccountIDAndTime)
 			list.GET("pin", api.Apis.Message.GetPinMsgsByRelationID)
 			list.GET("reply", api.Apis.Message.GetRlyMsgsInfoByMsgID)

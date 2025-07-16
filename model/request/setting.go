@@ -1,7 +1,5 @@
 package request
 
-import "chat/model/common"
-
 type ParamUpdateNickName struct {
 	RelationID int64  `json:"relation_id" binding:"required,gte=1"`      // 关系 ID
 	NickName   string `json:"nick_name" binding:"required,gte=1,tle=20"` // 昵称
@@ -27,6 +25,6 @@ type ParamDeleteFriend struct {
 }
 
 type ParamGetFriendsByName struct {
-	Name string `json:"name" binding:"required,gte=1"` // 要查询的名称
-	common.Page
+	Name string `form:"name" binding:"required,gte=1"` // 要查询的名称
+	//common.Page
 }

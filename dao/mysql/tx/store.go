@@ -18,6 +18,12 @@ type TXer interface {
 	AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow) (*db.Message, error)
 	CreateMessageTx(ctx context.Context, params *db.CreateMessageParams) (*db.GetMessageInfoTxRow, error)
 	RevokeMsgWithTx(ctx context.Context, msgID int64, isPin, isTop bool) error
+	DeleteMsgWithTx(ctx context.Context, msgID int64, isDel int32) error
+	DeleteRelationWithTx(ctx context.Context, rdb *operate.RDB, relationID int64) error
+	CreateGroupRelationWithTx(ctx context.Context, accountID int64, name string, description string) (error error, relationId int64)
+	AddSettingWithTx(ctx context.Context, rdb *operate.RDB, accountID, relationID int64, isLeader bool) error
+	TransferGroupWithTx(ctx context.Context, accountID, relationID, toAccountID int64) error
+	DeleteSettingWithTx(ctx context.Context, rdb *operate.RDB, accountID, relationID int64) error
 }
 
 // MySQLDB 实现了 DB 接口

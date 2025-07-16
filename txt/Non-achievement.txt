@@ -17,3 +17,5 @@ E:\Program Files\GO\my_chat\logic\application.go 新增了申请状态 '等待�
 
 task.UpdateMsgState 未实现
 
+controller/api/group.go 中的 UpdateGroup 方法更新头像未实现，涉及文件
+

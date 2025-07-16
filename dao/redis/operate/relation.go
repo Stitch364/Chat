@@ -88,3 +88,15 @@ func (r *RDB) ReloadRelationIDs(ctx context.Context, groupMap map[int64][]int64)
 	_, err = pipe.Exec(ctx)
 	return err
 }
+
+// DeleteRelationAccount 从一个群聊中删除多个成员
+func (r *RDB) DeleteRelationAccount(ctx context.Context, relationID int64, accountIDs ...int64) error {
+	if len(accountIDs) == 0 {
+		return nil
+	}
+	data := make([]interface{}, len(accountIDs))
+	for i, v := range accountIDs {
+		data[i] = utils.IDToString(v)
+	}
+	return r.rdb.SRem(ctx, utils.LinkStr(keyGroup, utils.IDToString(relationID)), data...).Err()
+}

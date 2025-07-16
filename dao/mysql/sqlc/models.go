@@ -325,6 +325,7 @@ type Message struct {
 	IsPin      bool
 	PinTime    time.Time
 	ReadIds    json.RawMessage
+	IsDelete   int32
 }
 
 type Relation struct {

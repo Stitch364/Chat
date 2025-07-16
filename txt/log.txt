@@ -164,7 +164,10 @@ tips: 模糊查询不能用 '%name%' 要防止SQL注入
 6/10 周二 晴
     测试了message的一些接口，改了很多bug（推送了github）
 
+7/15 周二 晴
+    完成并测试了setting和group部分的路由
+
+7/16 周三 晴
+    新增好友关系中删除消息的功能（单删）
+
 写到了
-    manager\chat
-    E:\Program Files\GO\my_chat\task\message.go
-    E:\Program Files\GO\my_chat\chat\message.go

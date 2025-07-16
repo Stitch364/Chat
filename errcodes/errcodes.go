@@ -22,6 +22,7 @@ var (
 	ApplicationRepeatOpt        = errcode.NewErr(3004, "重复操作申请")
 	UserHasAccount              = errcode.NewErr(3005, "用户存在账户")     // 删除用户时用户仍存在账户
 	AccountGroupLeader          = errcode.NewErr(3006, "账号作为群主不能删除") // 删除账户时，账户存在群主身份
+	DeleteNotLegal              = errcode.NewErr(3007, "不能删除自己")
 	RelationExists              = errcode.NewErr(4001, "关系已经存在")
 	RelationNotExists           = errcode.NewErr(4002, "关系不存在")
 	MsgNotExists                = errcode.NewErr(5001, "消息不存在")

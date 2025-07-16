@@ -6,9 +6,10 @@ import (
 	"chat/routs"
 	"github.com/XYYSWK/Lutils/pkg/app"
 	"github.com/gin-gonic/gin"
+	socketio "github.com/googollee/go-socket.io"
 )
 
-func NewRouter() *gin.Engine {
+func NewRouter() (*gin.Engine, *socketio.Server) {
 	r := gin.New()
 	r.Use(middlewares.Cors, middlewares.GinLogger(), middlewares.GinRecovery(true))
 
@@ -27,7 +28,8 @@ func NewRouter() *gin.Engine {
 		rg.Application.Init(root)
 		rg.Message.Init(root)
 		rg.Setting.Init(root)
+		rg.Group.Init(root)
 	}
 
-	return r
+	return r, routs.Routers.Chat.Init(r)
 }

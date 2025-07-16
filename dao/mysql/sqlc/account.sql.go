@@ -259,6 +259,35 @@ func (q *Queries) GetAccountsByUserID(ctx context.Context, userID int64) ([]*Get
 	return items, nil
 }
 
+const getAcountIDsByUserID = `-- name: GetAcountIDsByUserID :many
+select id
+from accounts
+where user_id = ?
+`
+
+func (q *Queries) GetAcountIDsByUserID(ctx context.Context, userID int64) ([]int64, error) {
+	rows, err := q.query(ctx, q.getAcountIDsByUserIDStmt, getAcountIDsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateAccount = `-- name: UpdateAccount :exec
 update accounts
 set name        = ?,

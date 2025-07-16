@@ -1,7 +1,6 @@
 package request
 
 import (
-	"chat/model/common"
 	"mime/multipart"
 )
 
@@ -12,9 +11,10 @@ type ParamCreateFileMsg struct {
 }
 
 type ParamGetMsgsByRelationIDAndTime struct {
-	RelationID int64 `form:"relation_id" binding:"required,gte=1"` // 关系 ID
-	LastTime   int32 `form:"last_time" binding:"required,gte=1"`   // 拉取消息最晚的时间戳（精确到秒）
-	common.Page
+	RelationID int64 `json:"relation_id" binding:"required,gte=1"` // 关系 ID
+	LastTime   int64 `json:"last_time" binding:"required,gte=1"`   // 拉取消息最晚的时间戳（精确到秒）
+	//common.Page
+	// binding:"required,gte=1
 }
 
 //type ParamOfferMsgsByAccountIDAndTime struct {
@@ -38,19 +38,23 @@ type ParamRevokeMsg struct {
 	ID int64 `json:"id" binding:"required,gte=1"` // 消息 ID
 }
 
+type ParamDeleteMsg struct {
+	ID int64 `json:"id" binding:"required,gte=1"` // 消息 ID
+}
+
 type ParamGetTopMsgByRelationID struct {
 	RelationID int64 `json:"relation_id" form:"relation_id" binding:"required,gte=1"`
 }
 
 type ParamGetPinMsgsByRelationID struct {
 	RelationID int64 `json:"relation_id" form:"relation_id" binding:"required,gte=1"`
-	common.Page
+	//common.Page
 }
 
 type ParamGetRlyMsgsInfoByMsgID struct {
 	RelationID int64 `json:"relation_id" form:"relation_id" binding:"required,gte=1"`
 	MsgID      int64 `json:"msg_id" form:"msg_id" binding:"required,gte=1"`
-	common.Page
+	//common.Page
 }
 
 type ParamGetMsgsByContent struct {

@@ -6,7 +6,6 @@ import (
 	"chat/model/chat"
 	"chat/model/chat/server"
 	"chat/model/reply"
-	"chat/pkg/rocketmq/producer"
 	"github.com/XYYSWK/Lutils/pkg/utils"
 )
 
@@ -26,7 +25,7 @@ func PublishMsg(msg reply.ParamMsgInfoWithRly) func() {
 				global.ChatMap.Send(accountID, chat.ClientSendMsg, msg)
 			} else {
 				//用户离线，将消息发送至MQ中
-				producer.SendMsgToMQ(accountID, msg)
+				//producer.SendMsgToMQ(accountID, msg)
 			}
 		}
 	}

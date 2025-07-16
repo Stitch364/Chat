@@ -7,6 +7,7 @@ type logics struct {
 	Application application
 	Message     message
 	Setting     setting
+	Group       group
 }
 
 var Logics = new(logics)
