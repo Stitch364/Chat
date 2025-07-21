@@ -96,7 +96,7 @@ where account1_id = ?
   and account2_id = ?;
 
 -- name: GetGroupList :many
-select s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self,
+select s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self,s.is_leader,
        r.id as relation_id,
        r.name as group_name,
        r.description,
@@ -109,7 +109,8 @@ from (select relation_id,
     pin_time,
     is_show,
     last_show,
-    is_self
+    is_self,
+    is_leader
     from settings,
     relations
     where settings.account_id = ?

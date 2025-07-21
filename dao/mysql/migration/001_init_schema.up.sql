@@ -23,7 +23,7 @@ create table if not exists accounts(
 create index account_index_name_avatar on accounts(name, avatar);
 
 # 群组或好友
-create table relations(
+create table if not exists relations(
     id bigint AUTO_INCREMENT not null primary key, -- id
     relation enum('group','friend') not null, -- 关系类型
 
@@ -60,7 +60,7 @@ create index relation_setting_nickname on settings (nick_name);
 create index setting_idx_account_id_relation_id on settings (account_id, relation_id);
 
 -- 好友申请
-create table applications(
+create table if not exists applications(
      account1_id bigint not null references accounts (id) on delete cascade on update cascade, -- 申请者账号 id（外键）
      account2_id bigint not null references accounts (id) on delete cascade on update cascade, -- 被申请者账号 id（外键）
      apply_msg text not null, -- 申请信息
@@ -72,7 +72,7 @@ create table applications(
 );
 
 -- 文件记录
-create table files
+create table if not exists files
 (
     id bigint AUTO_INCREMENT not null primary key, -- 文件 id
     file_name varchar(255) not null, -- 文件名称
@@ -89,7 +89,7 @@ create table files
 create index file_relation_id on files (relation_id);
 
 -- 消息
-create table messages
+create table if not exists messages
 (
     id bigint AUTO_INCREMENT primary key, -- 消息 id
     notify_type enum('system', 'common') not null, -- 消息通知类型 system:系统消息，common:普通消息
@@ -108,15 +108,24 @@ create table messages
     read_ids json, -- 已读用户 id 集合 默认是空的json数组
     #msg_content_tsy tsvector, -- 消息分词
     is_delete int not null default 0,
-    check (notify_type = 'common' or (notify_type = 'system' and account_id is null)), -- 系统消息时发送账号 id 为 null
-    check (msg_type = 'text' or (msg_type = 'file' and file_id is not null)) -- 文件消息时文件 id 不能为 null
+    check (notify_type = 'common' or notify_type = 'system'), -- 系统消息时发送账号 id 为 null
+    check (msg_type = 'text' or msg_type = 'file') -- 文件消息时文件 id 不能为 null
 );
 -- 创建时间索引
 create index msg_create_at on messages (create_at);
 
+# -- 创建将已读设置为null的触发器
+# CREATE TRIGGER  before_insert_messages
+#     BEFORE INSERT ON messages
+#     FOR EACH ROW
+# BEGIN
+#     IF NEW.read_ids IS NULL THEN
+#         SET NEW.read_ids = JSON_ARRAY();
+#     END IF;
+# END;
 
 -- 群通知
-create table group_notify
+create table if not exists group_notify
 (
     id bigint AUTO_INCREMENT primary key, -- 群通知 id
     relation_id bigint references relations (id) on delete cascade on update cascade, -- 关系 id（外键）
@@ -128,3 +137,12 @@ create table group_notify
     #msg_content_tsv tsvector -- 消息分词
 );
 
+# -- 创建将群通知已读设置为null的触发器
+# CREATE TRIGGER before_insert_group_notify
+#     BEFORE INSERT ON group_notify
+#     FOR EACH ROW
+# BEGIN
+#     IF NEW.read_ids IS NULL THEN
+#         SET NEW.read_ids = JSON_ARRAY();
+#     END IF;
+# END;

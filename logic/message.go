@@ -535,8 +535,8 @@ func (message) DeleteMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
 		return errcodes.MsgAlreadyRevoke
 	}
 	//发消息人不是自己
-	fmt.Println(msgInfo.AccountID.Int64)
-	fmt.Println(accountID)
+	//fmt.Println(msgInfo.AccountID.Int64)
+	//fmt.Println(accountID)
 	if msgInfo.AccountID.Int64 != accountID {
 		Isdel = -1
 	} else {

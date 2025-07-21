@@ -10,9 +10,9 @@ import (
 	"chat/model"
 	"chat/model/common"
 	"chat/model/reply"
+	"chat/task"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
 )
@@ -105,7 +105,6 @@ func getAccountInfoByID(ctx *gin.Context, accountID, selfID int64) (*db.GetAccou
 
 func (account) DeleteAccount(ctx *gin.Context, userID, accountID int64) errcode.Err {
 	//用账号ID获取账号信息
-	fmt.Println("000 on logic")
 	accountInfo, myerr := getAccountInfoByID(ctx, accountID, accountID)
 	if myerr != nil {
 		return myerr
@@ -181,8 +180,9 @@ func (account) UpdateAccount(ctx *gin.Context, accountID int64, name, gender, si
 		return errcode.ErrServer
 	}
 	//获取Token
-	//accessToken, _ := middlewares.GetToken(ctx.Request.Header)
+	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
 	//推送更新消息
+	global.Worker.SendTask(task.UpdateAccount(accessToken, accountID, name, gender, signature))
 
 	return nil
 }

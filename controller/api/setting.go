@@ -33,6 +33,7 @@ func (setting) UpdateNickName(ctx *gin.Context) {
 		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
 		return
 	}
+	//fmt.Println("1---------", params.RelationID, params.NickName)
 	content, ok := middlewares.GetTokenContent(ctx)
 	if !ok || content.TokenType != model.AccountToken {
 		reply.Reply(errcodes.AuthNotExist)

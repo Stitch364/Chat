@@ -202,6 +202,7 @@ func (group) GetGroupList(ctx *gin.Context, accountID int64) (*reply.ParamGetGro
 				IsShow:       v.IsShow,
 				PinTime:      v.PinTime,
 				LastShow:     v.LastShow,
+				IsLeader:     v.IsLeader,
 			},
 			GroupInfo: &model.SettingGroupInfo{
 				RelationID:  v.RelationID,

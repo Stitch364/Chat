@@ -37,6 +37,7 @@ type SettingInfo struct {
 	IsShow       bool      `json:"is_show,omitempty"`        // 是否显示
 	PinTime      time.Time `json:"pin_time"`                 // pin 时间
 	LastShow     time.Time `json:"last_show"`                // 最后显示时间
+	IsLeader     bool      `json:"is_leader"`
 }
 
 type Setting struct {
