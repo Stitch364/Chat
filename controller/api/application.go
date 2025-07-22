@@ -53,7 +53,7 @@ func (application) DeleteApplication(ctx *gin.Context) {
 		return
 	}
 	//2.业务处理
-	err := logic.Logics.Application.DeleteApplication(ctx, content.ID, params.AccountID)
+	err := logic.Logics.Application.DeleteApplication(ctx, content.ID, params.AccountID, params.CreatAt)
 
 	//3.返回响应
 	reply.Reply(err)
@@ -75,7 +75,7 @@ func (application) AcceptApplication(ctx *gin.Context) {
 		return
 	}
 	//2.业务处理
-	err := logic.Logics.Application.AcceptApplication(ctx, params.AccountID, content.ID)
+	err := logic.Logics.Application.AcceptApplication(ctx, params.AccountID, content.ID, params.CreatAt)
 
 	//3.返回响应
 	reply.Reply(err)
@@ -98,7 +98,7 @@ func (application) RefuseApplication(ctx *gin.Context) {
 	}
 	//2.业务处理
 	// 被申请人拒绝申请人发的申请
-	err := logic.Logics.Application.RefuseApplication(ctx, params.AccountID, content.ID, params.RefuseMsg)
+	err := logic.Logics.Application.RefuseApplication(ctx, params.AccountID, content.ID, params.RefuseMsg, params.CreatAt)
 
 	//3.返回响应
 	reply.Reply(err)

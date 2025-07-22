@@ -68,7 +68,7 @@ create table if not exists applications(
      status enum('已申请','已同意','已拒绝','等待验证') not null default '已申请', -- 申请状态
      create_at timestamp not null default now(), -- 创建时间
      update_at timestamp not null default now(), -- 更新时间
-     constraint f_a_pk primary key (account1_id, account2_id)
+     constraint f_a_pk primary key (account1_id, account2_id,create_at)
 );
 
 -- 文件记录

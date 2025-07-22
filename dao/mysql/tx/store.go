@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql" // 导入 MySQL 驱动
+	"time"
 )
 
 // TXer 用于执行事务相关操作
@@ -14,8 +15,8 @@ type TXer interface {
 	// CreateAccountWithTx 创建账号并建立和自己的关系
 	CreateAccountWithTx(ctx context.Context, rdb *operate.RDB, maxAccountNum int64, arg *db.CreateAccountParams) error
 	DeleteAccountWithTx(ctx context.Context, rdb *operate.RDB, accountID int64) error
-	CreateApplicationTx(ctx context.Context, params *db.CreateApplicationParams) error
-	AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow) (*db.Message, error)
+	CreateApplicationTx(ctx context.Context, params *db.CreateApplicationParams) (err error, times int)
+	AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow, creatAt time.Time) (*db.Message, error)
 	CreateMessageTx(ctx context.Context, params *db.CreateMessageParams) (*db.GetMessageInfoTxRow, error)
 	RevokeMsgWithTx(ctx context.Context, msgID int64, isPin, isTop bool) error
 	DeleteMsgWithTx(ctx context.Context, msgID int64, isDel int32) error

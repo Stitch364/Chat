@@ -75,6 +75,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.existEmailStmt, err = db.PrepareContext(ctx, existEmail); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistEmail: %w", err)
 	}
+	if q.existRelationStmt, err = db.PrepareContext(ctx, existRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query ExistRelation: %w", err)
+	}
 	if q.existsAccountByIDStmt, err = db.PrepareContext(ctx, existsAccountByID); err != nil {
 		return nil, fmt.Errorf("error preparing query ExistsAccountByID: %w", err)
 	}
@@ -140,6 +143,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getApplicationsStmt, err = db.PrepareContext(ctx, getApplications); err != nil {
 		return nil, fmt.Errorf("error preparing query GetApplications: %w", err)
+	}
+	if q.getApplicationsCreatTimeStmt, err = db.PrepareContext(ctx, getApplicationsCreatTime); err != nil {
+		return nil, fmt.Errorf("error preparing query GetApplicationsCreatTime: %w", err)
+	}
+	if q.getApplicationsStatusStmt, err = db.PrepareContext(ctx, getApplicationsStatus); err != nil {
+		return nil, fmt.Errorf("error preparing query GetApplicationsStatus: %w", err)
 	}
 	if q.getFriendPinSettingsOrderByPinTimeStmt, err = db.PrepareContext(ctx, getFriendPinSettingsOrderByPinTime); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFriendPinSettingsOrderByPinTime: %w", err)
@@ -366,6 +375,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing existEmailStmt: %w", cerr)
 		}
 	}
+	if q.existRelationStmt != nil {
+		if cerr := q.existRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing existRelationStmt: %w", cerr)
+		}
+	}
 	if q.existsAccountByIDStmt != nil {
 		if cerr := q.existsAccountByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing existsAccountByIDStmt: %w", cerr)
@@ -474,6 +488,16 @@ func (q *Queries) Close() error {
 	if q.getApplicationsStmt != nil {
 		if cerr := q.getApplicationsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getApplicationsStmt: %w", cerr)
+		}
+	}
+	if q.getApplicationsCreatTimeStmt != nil {
+		if cerr := q.getApplicationsCreatTimeStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getApplicationsCreatTimeStmt: %w", cerr)
+		}
+	}
+	if q.getApplicationsStatusStmt != nil {
+		if cerr := q.getApplicationsStatusStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getApplicationsStatusStmt: %w", cerr)
 		}
 	}
 	if q.getFriendPinSettingsOrderByPinTimeStmt != nil {
@@ -757,6 +781,7 @@ type Queries struct {
 	deleteSettingsByAccountIDStmt             *sql.Stmt
 	deleteUserStmt                            *sql.Stmt
 	existEmailStmt                            *sql.Stmt
+	existRelationStmt                         *sql.Stmt
 	existsAccountByIDStmt                     *sql.Stmt
 	existsAccountByNameAndUserIDStmt          *sql.Stmt
 	existsApplicationByIDWithLockStmt         *sql.Stmt
@@ -779,6 +804,8 @@ type Queries struct {
 	getAllRelationOnRelationStmt              *sql.Stmt
 	getApplicationByIDStmt                    *sql.Stmt
 	getApplicationsStmt                       *sql.Stmt
+	getApplicationsCreatTimeStmt              *sql.Stmt
+	getApplicationsStatusStmt                 *sql.Stmt
 	getFriendPinSettingsOrderByPinTimeStmt    *sql.Stmt
 	getFriendRelationByIDStmt                 *sql.Stmt
 	getFriendRelationIDsByAccountIDStmt       *sql.Stmt
@@ -847,6 +874,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteSettingsByAccountIDStmt:             q.deleteSettingsByAccountIDStmt,
 		deleteUserStmt:                            q.deleteUserStmt,
 		existEmailStmt:                            q.existEmailStmt,
+		existRelationStmt:                         q.existRelationStmt,
 		existsAccountByIDStmt:                     q.existsAccountByIDStmt,
 		existsAccountByNameAndUserIDStmt:          q.existsAccountByNameAndUserIDStmt,
 		existsApplicationByIDWithLockStmt:         q.existsApplicationByIDWithLockStmt,
@@ -869,6 +897,8 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getAllRelationOnRelationStmt:              q.getAllRelationOnRelationStmt,
 		getApplicationByIDStmt:                    q.getApplicationByIDStmt,
 		getApplicationsStmt:                       q.getApplicationsStmt,
+		getApplicationsCreatTimeStmt:              q.getApplicationsCreatTimeStmt,
+		getApplicationsStatusStmt:                 q.getApplicationsStatusStmt,
 		getFriendPinSettingsOrderByPinTimeStmt:    q.getFriendPinSettingsOrderByPinTimeStmt,
 		getFriendRelationByIDStmt:                 q.getFriendRelationByIDStmt,
 		getFriendRelationIDsByAccountIDStmt:       q.getFriendRelationIDsByAccountIDStmt,

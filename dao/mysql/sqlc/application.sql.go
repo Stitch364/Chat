@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -32,17 +33,47 @@ delete
 from applications
 where account1_id = ?
   and account2_id = ?
+  and create_at = ?
 `
 
 type DeleteApplicationParams struct {
 	Account1ID int64
 	Account2ID int64
+	CreateAt   time.Time
 }
 
 // {account1_id:int64,account2_id:int64}
 func (q *Queries) DeleteApplication(ctx context.Context, arg *DeleteApplicationParams) error {
-	_, err := q.exec(ctx, q.deleteApplicationStmt, deleteApplication, arg.Account1ID, arg.Account2ID)
+	_, err := q.exec(ctx, q.deleteApplicationStmt, deleteApplication, arg.Account1ID, arg.Account2ID, arg.CreateAt)
 	return err
+}
+
+const existRelation = `-- name: ExistRelation :one
+select exists(
+    select 1
+    from relations
+    where (account1_id = ? and account2_id = ?)
+       or (account1_id = ? and account2_id = ?)
+        for update )
+`
+
+type ExistRelationParams struct {
+	Account1ID   sql.NullInt64
+	Account2ID   sql.NullInt64
+	Account1ID_2 sql.NullInt64
+	Account2ID_2 sql.NullInt64
+}
+
+func (q *Queries) ExistRelation(ctx context.Context, arg *ExistRelationParams) (bool, error) {
+	row := q.queryRow(ctx, q.existRelationStmt, existRelation,
+		arg.Account1ID,
+		arg.Account2ID,
+		arg.Account1ID_2,
+		arg.Account2ID_2,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const existsApplicationByIDWithLock = `-- name: ExistsApplicationByIDWithLock :one
@@ -77,18 +108,19 @@ func (q *Queries) ExistsApplicationByIDWithLock(ctx context.Context, arg *Exists
 const getApplicationByID = `-- name: GetApplicationByID :one
 select account1_id, account2_id, apply_msg, refuse_msg, status, create_at, update_at
 from applications
-where account1_id = ? and account2_id = ?
+where account1_id = ? and account2_id = ? and create_at = ?
 limit 1
 `
 
 type GetApplicationByIDParams struct {
 	Account1ID int64
 	Account2ID int64
+	CreateAt   time.Time
 }
 
 // {account1_id:int64,account2_id:int64}
 func (q *Queries) GetApplicationByID(ctx context.Context, arg *GetApplicationByIDParams) (*Application, error) {
-	row := q.queryRow(ctx, q.getApplicationByIDStmt, getApplicationByID, arg.Account1ID, arg.Account2ID)
+	row := q.queryRow(ctx, q.getApplicationByIDStmt, getApplicationByID, arg.Account1ID, arg.Account2ID, arg.CreateAt)
 	var i Application
 	err := row.Scan(
 		&i.Account1ID,
@@ -184,6 +216,62 @@ func (q *Queries) GetApplications(ctx context.Context, arg *GetApplicationsParam
 	return items, nil
 }
 
+const getApplicationsCreatTime = `-- name: GetApplicationsCreatTime :one
+select create_at
+from applications
+where (account1_id = ? and account2_id = ?)
+   or (account1_id = ? and account2_id = ?)
+order by create_at desc
+limit 1
+`
+
+type GetApplicationsCreatTimeParams struct {
+	Account1ID   int64
+	Account2ID   int64
+	Account1ID_2 int64
+	Account2ID_2 int64
+}
+
+func (q *Queries) GetApplicationsCreatTime(ctx context.Context, arg *GetApplicationsCreatTimeParams) (time.Time, error) {
+	row := q.queryRow(ctx, q.getApplicationsCreatTimeStmt, getApplicationsCreatTime,
+		arg.Account1ID,
+		arg.Account2ID,
+		arg.Account1ID_2,
+		arg.Account2ID_2,
+	)
+	var create_at time.Time
+	err := row.Scan(&create_at)
+	return create_at, err
+}
+
+const getApplicationsStatus = `-- name: GetApplicationsStatus :one
+select status
+from applications
+where (account1_id = ? and account2_id = ?)
+    or (account1_id = ? and account2_id = ?)
+order by create_at desc
+limit 1
+`
+
+type GetApplicationsStatusParams struct {
+	Account1ID   int64
+	Account2ID   int64
+	Account1ID_2 int64
+	Account2ID_2 int64
+}
+
+func (q *Queries) GetApplicationsStatus(ctx context.Context, arg *GetApplicationsStatusParams) (ApplicationsStatus, error) {
+	row := q.queryRow(ctx, q.getApplicationsStatusStmt, getApplicationsStatus,
+		arg.Account1ID,
+		arg.Account2ID,
+		arg.Account1ID_2,
+		arg.Account2ID_2,
+	)
+	var status ApplicationsStatus
+	err := row.Scan(&status)
+	return status, err
+}
+
 const updateApplication = `-- name: UpdateApplication :exec
 update applications
 set status = ?,
@@ -191,6 +279,7 @@ set status = ?,
     update_at = now()
 where account1_id = ?
   and account2_id = ?
+    and create_at = ?
 `
 
 type UpdateApplicationParams struct {
@@ -198,6 +287,7 @@ type UpdateApplicationParams struct {
 	RefuseMsg  string
 	Account1ID int64
 	Account2ID int64
+	CreateAt   time.Time
 }
 
 // {status:string,refuse_msg:string,account1_id:int64,account2_id:int64}
@@ -207,6 +297,7 @@ func (q *Queries) UpdateApplication(ctx context.Context, arg *UpdateApplicationP
 		arg.RefuseMsg,
 		arg.Account1ID,
 		arg.Account2ID,
+		arg.CreateAt,
 	)
 	return err
 }

@@ -218,7 +218,7 @@ FROM (
            AND relations.relation = 'friend'
      ) AS s,
      accounts a
-WHERE a.id = (
+WHERE a.id in (
     SELECT sub_s.account_id
     FROM settings AS sub_s
     WHERE sub_s.relation_id = s.relation_id

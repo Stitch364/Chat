@@ -1,4 +1,4 @@
-version: 2
+version: 1
 packages:
   - name: "db" # 根据 sql 语句生成的 go 代码所在的包名
     path: "dao/mysql/sqlc" # 生成代码的路径

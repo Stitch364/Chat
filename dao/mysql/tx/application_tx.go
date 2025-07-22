@@ -8,12 +8,13 @@ import (
 	"chat/pkg/tool"
 	"context"
 	"database/sql"
+	"time"
 )
 
 // CreateApplicationTx 用事务先判断是否存在申请，不存在则创建
 // 用户1给用户2发送申请，2在没回应的情况下，是不能给用户1发送申请的,因为这里查询申请存在时查的是双向的申请
 // 开事务是为了防止查询时，更改了数据库中申请的信息，有可能导致用户2已经同意了申请，用户1再发送申请
-func (store *MySQLDB) CreateApplicationTx(ctx context.Context, params *db.CreateApplicationParams) error {
+func (store *MySQLDB) CreateApplicationTx(ctx context.Context, params *db.CreateApplicationParams) (err error, times int) {
 	return store.execTx(ctx, func(q *db.Queries) error {
 		//查看申请是否存在
 		ok, err := q.ExistsApplicationByIDWithLock(ctx, &db.ExistsApplicationByIDWithLockParams{
@@ -27,13 +28,69 @@ func (store *MySQLDB) CreateApplicationTx(ctx context.Context, params *db.Create
 		}
 		if ok {
 			//存在申请
-			return errcodes.ApplicationExists
+			//判断申请状态
+			status, err := q.GetApplicationsStatus(ctx, &db.GetApplicationsStatusParams{
+				Account1ID:   params.Account1ID,
+				Account2ID:   params.Account2ID,
+				Account1ID_2: params.Account1ID,
+				Account2ID_2: params.Account2ID,
+			})
+			if err != nil {
+				return err
+			}
+			if status == db.ApplicationsStatusValue1 {
+				//已同意
+				//判断是否有好友关系（是否是被删了好友）
+				ok, err := q.ExistRelation(ctx, &db.ExistRelationParams{
+					Account1ID:   sql.NullInt64{Int64: params.Account1ID, Valid: true},
+					Account2ID:   sql.NullInt64{Int64: params.Account2ID, Valid: true},
+					Account1ID_2: sql.NullInt64{Int64: params.Account1ID, Valid: true},
+					Account2ID_2: sql.NullInt64{Int64: params.Account2ID, Valid: true},
+				})
+				if err != nil {
+					return err
+				}
+
+				if !ok {
+					//存在 '已同意的申请' ，并且不存在好友关系
+					//也就是删好友了
+					//创建申请
+					return q.CreateApplication(ctx, params)
+				} else {
+					return errcodes.ApplicationExists
+				} //已经是好友了就不能发申请了
+
+			} else if status == db.ApplicationsStatusValue2 {
+				//已拒绝
+				//拒绝7天后可再次申请
+				t, err := q.GetApplicationsCreatTime(ctx, &db.GetApplicationsCreatTimeParams{
+					Account1ID:   params.Account1ID,
+					Account2ID:   params.Account2ID,
+					Account1ID_2: params.Account1ID,
+					Account2ID_2: params.Account2ID,
+				})
+				if err != nil {
+					return err
+				}
+				//计算冷却时间
+				diffMinutes := int(time.Since(t).Minutes())
+				times = errcodes.SevenDay - diffMinutes + 8*60
+				//冷却时间大于0
+				if times > 0 {
+					return errcodes.CoolingOffPeriod
+				} else {
+					//冷却时间结束
+					return q.CreateApplication(ctx, params)
+				}
+			} else {
+				return errcodes.ApplicationExists
+			}
 		}
 		return q.CreateApplication(ctx, params)
-	})
+	}), times
 }
 
-func (store *MySQLDB) AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow) (*db.Message, error) {
+func (store *MySQLDB) AcceptApplicationTx(ctx context.Context, rdb *operate.RDB, account1, account2 *db.GetAccountByIDRow, creatAt time.Time) (*db.Message, error) {
 	var result *db.Message
 	err := store.execTx(ctx, func(q *db.Queries) error {
 		var err error
@@ -43,6 +100,7 @@ func (store *MySQLDB) AcceptApplicationTx(ctx context.Context, rdb *operate.RDB,
 				Account1ID: account1.ID,
 				Account2ID: account2.ID,
 				Status:     db.ApplicationsStatusValue1, //已同意
+				CreateAt:   creatAt,
 			})
 		})
 		id1, id2 := account1.ID, account2.ID

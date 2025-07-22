@@ -18,13 +18,14 @@ select exists(
 delete
 from applications
 where account1_id = ?
-  and account2_id = ?;
+  and account2_id = ?
+  and create_at = ?;
 
 -- name: GetApplicationByID :one
 -- {account1_id:int64,account2_id:int64}
 select *
 from applications
-where account1_id = ? and account2_id = ?
+where account1_id = ? and account2_id = ? and create_at = ?
 limit 1;
 
 -- name: UpdateApplication :exec
@@ -34,7 +35,8 @@ set status = ?,
     refuse_msg = ?,
     update_at = now()
 where account1_id = ?
-  and account2_id = ?;
+  and account2_id = ?
+    and create_at = ?;
 
 -- name: GetApplications :many
 -- {account1_id:int64,account2_id:int64,limit:int32,offset:int32,total:int64}
@@ -53,3 +55,27 @@ from accounts a1,
       limit ? offset ?) as app
 where a1.id = app.account1_id
   and a2.id = app.account2_id;
+
+-- name: GetApplicationsStatus :one
+select status
+from applications
+where (account1_id = ? and account2_id = ?)
+    or (account1_id = ? and account2_id = ?)
+order by create_at desc
+limit 1;
+
+-- name: ExistRelation :one
+select exists(
+    select 1
+    from relations
+    where (account1_id = ? and account2_id = ?)
+       or (account1_id = ? and account2_id = ?)
+        for update );
+
+-- name: GetApplicationsCreatTime :one
+select create_at
+from applications
+where (account1_id = ? and account2_id = ?)
+   or (account1_id = ? and account2_id = ?)
+order by create_at desc
+limit 1;

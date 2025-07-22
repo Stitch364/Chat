@@ -10,8 +10,10 @@ import (
 	"chat/task"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 type application struct {
@@ -25,7 +27,7 @@ func (application) CreateApplication(ctx *gin.Context, accountID1, accountID2 in
 	//判断是否是好友？（已经是好友了怎么发申请？）
 
 	//创建申请
-	err := dao.Database.DB.CreateApplicationTx(ctx, &db.CreateApplicationParams{
+	err, times := dao.Database.DB.CreateApplicationTx(ctx, &db.CreateApplicationParams{
 		Account1ID: accountID1,
 		Account2ID: accountID2,
 		ApplyMsg:   msg,
@@ -34,8 +36,11 @@ func (application) CreateApplication(ctx *gin.Context, accountID1, accountID2 in
 	case errors.Is(err, errcodes.ApplicationExists):
 		return errcodes.ApplicationExists
 	case errors.Is(err, nil):
-		//global.Worker.SendTask(task.Application(accountID2))
+		global.Worker.SendTask(task.Application(accountID2))
 		return nil
+	case errors.Is(err, errcodes.CoolingOffPeriod):
+		s := fmt.Sprintf("冷却时间：%d 天 %d 小时", times/1440, (times%1440)/60)
+		return errcodes.CoolingOffPeriod.WithDetails(s)
 	default:
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return errcode.ErrServer
@@ -43,8 +48,8 @@ func (application) CreateApplication(ctx *gin.Context, accountID1, accountID2 in
 	//将申请消息发送到被申请方
 }
 
-func (application) DeleteApplication(ctx *gin.Context, accountID1, accountID2 int64) errcode.Err {
-	apply, err := getApplication(ctx, accountID1, accountID2)
+func (application) DeleteApplication(ctx *gin.Context, accountID1, accountID2 int64, creatAt time.Time) errcode.Err {
+	apply, err := getApplication(ctx, accountID1, accountID2, creatAt)
 	if err != nil {
 		return errcode.ErrServer
 	}
@@ -63,10 +68,11 @@ func (application) DeleteApplication(ctx *gin.Context, accountID1, accountID2 in
 	return nil
 }
 
-func getApplication(ctx *gin.Context, accountID1, accountID2 int64) (*db.Application, errcode.Err) {
+func getApplication(ctx *gin.Context, accountID1, accountID2 int64, creatAt time.Time) (*db.Application, errcode.Err) {
 	apply, err := dao.Database.DB.GetApplicationByID(ctx, &db.GetApplicationByIDParams{
 		Account1ID: accountID1,
 		Account2ID: accountID2,
+		CreateAt:   creatAt,
 	})
 	switch {
 	case errors.Is(err, nil):
@@ -80,9 +86,9 @@ func getApplication(ctx *gin.Context, accountID1, accountID2 int64) (*db.Applica
 }
 
 // AcceptApplication 同意申请
-func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 int64) errcode.Err {
+func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 int64, creatAt time.Time) errcode.Err {
 	//申请中只有双方ID，应展示头像，名字
-	apply, myerr := getApplication(ctx, accountID1, accountID2)
+	apply, myerr := getApplication(ctx, accountID1, accountID2, creatAt)
 	if myerr != nil {
 		return myerr
 	}
@@ -99,7 +105,7 @@ func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 in
 		return myerr
 	}
 	//同意后需要创建两人好友关系，创建两人互相的设置，推送消息
-	msgInfo, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2)
+	msgInfo, err := dao.Database.DB.AcceptApplicationTx(ctx, dao.Database.Redis, accountInfo1, accountInfo2, creatAt)
 	if err != nil {
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return errcode.ErrServer
@@ -121,9 +127,9 @@ func (application) AcceptApplication(ctx *gin.Context, accountID1, accountID2 in
 
 // RefuseApplication 拒绝申请
 // 拒绝申请只需要修改申请状态即可
-func (application) RefuseApplication(ctx *gin.Context, accountID1, accountID2 int64, refuseMsg string) errcode.Err {
+func (application) RefuseApplication(ctx *gin.Context, accountID1, accountID2 int64, refuseMsg string, creatAt time.Time) errcode.Err {
 	//申请中只有双方ID，应展示头像，名字
-	apply, myerr := getApplication(ctx, accountID1, accountID2)
+	apply, myerr := getApplication(ctx, accountID1, accountID2, creatAt)
 	if myerr != nil {
 		return myerr
 	}
@@ -135,6 +141,7 @@ func (application) RefuseApplication(ctx *gin.Context, accountID1, accountID2 in
 		RefuseMsg:  refuseMsg,
 		Account1ID: accountID1,
 		Account2ID: accountID2,
+		CreateAt:   creatAt,
 	}); err != nil {
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return errcode.ErrServer

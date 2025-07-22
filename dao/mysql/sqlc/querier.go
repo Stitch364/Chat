@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 type Querier interface {
@@ -36,6 +37,7 @@ type Querier interface {
 	DeleteUser(ctx context.Context, id int64) error
 	// {email:string}
 	ExistEmail(ctx context.Context, email string) (bool, error)
+	ExistRelation(ctx context.Context, arg *ExistRelationParams) (bool, error)
 	// {id:int64}
 	ExistsAccountByID(ctx context.Context, id int64) (bool, error)
 	// {user_id:int64, name:string}
@@ -68,6 +70,8 @@ type Querier interface {
 	GetApplicationByID(ctx context.Context, arg *GetApplicationByIDParams) (*Application, error)
 	// {account1_id:int64,account2_id:int64,limit:int32,offset:int32,total:int64}
 	GetApplications(ctx context.Context, arg *GetApplicationsParams) ([]*GetApplicationsRow, error)
+	GetApplicationsCreatTime(ctx context.Context, arg *GetApplicationsCreatTimeParams) (time.Time, error)
+	GetApplicationsStatus(ctx context.Context, arg *GetApplicationsStatusParams) (ApplicationsStatus, error)
 	GetFriendPinSettingsOrderByPinTime(ctx context.Context, arg *GetFriendPinSettingsOrderByPinTimeParams) ([]*GetFriendPinSettingsOrderByPinTimeRow, error)
 	GetFriendRelationByID(ctx context.Context, id int64) (*GetFriendRelationByIDRow, error)
 	GetFriendRelationIDsByAccountID(ctx context.Context, arg *GetFriendRelationIDsByAccountIDParams) ([]int64, error)

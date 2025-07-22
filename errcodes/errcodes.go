@@ -2,6 +2,8 @@ package errcodes
 
 import "github.com/XYYSWK/Lutils/pkg/app/errcode"
 
+const SevenDay = int(7 * 24 * 60)
+
 var (
 	UserNotFound                = errcode.NewErr(2001, "用户不存在")
 	PasswordNotValid            = errcode.NewErr(2002, "密码错误")
@@ -23,6 +25,7 @@ var (
 	UserHasAccount              = errcode.NewErr(3005, "用户存在账户")     // 删除用户时用户仍存在账户
 	AccountGroupLeader          = errcode.NewErr(3006, "账号作为群主不能删除") // 删除账户时，账户存在群主身份
 	DeleteNotLegal              = errcode.NewErr(3007, "不能删除自己")
+	CoolingOffPeriod            = errcode.NewErr(3008, "7天冷却期内不可发送申请")
 	RelationExists              = errcode.NewErr(4001, "关系已经存在")
 	RelationNotExists           = errcode.NewErr(4002, "关系不存在")
 	MsgNotExists                = errcode.NewErr(5001, "消息不存在")
