@@ -2,6 +2,10 @@ package middlewares
 
 import (
 	"bytes"
+	"chat/global"
+	"fmt"
+	"github.com/XYYSWK/Lutils/pkg/email"
+	"github.com/XYYSWK/Lutils/pkg/times"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"io"
@@ -9,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -60,7 +65,7 @@ func GinLogger() gin.HandlerFunc {
 		c.Next()
 
 		cost := time.Since(start)
-		zap.L().Info(path,
+		global.Logger.Info(path,
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
 			zap.String("path", path),
@@ -73,50 +78,149 @@ func GinLogger() gin.HandlerFunc {
 	}
 }
 
-// GinRecovery recover掉项目可能出现的panic，并使用zap记录相关日志
-func GinRecovery(stack bool) gin.HandlerFunc {
+func GinLogger2() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		// ===== 取当前调用栈（文件名、行号、函数名）=====
+		pc, file, line, ok := runtime.Caller(1) // 1 = 调用此函数的栈帧
+		fnName := "unknown"
+		if ok {
+			fn := runtime.FuncForPC(pc)
+			fnName = fn.Name()
+		}
+
+		c.Next()
+
+		cost := time.Since(start)
+		global.Logger.Info(path,
+			zap.Int("status", c.Writer.Status()),
+			zap.String("method", c.Request.Method),
+			zap.String("path", path),
+			zap.String("query", query),
+			zap.String("ip", c.ClientIP()),
+			zap.String("user-agent", c.Request.UserAgent()),
+			zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
+			zap.Duration("cost", cost),
+			// 新增字段
+			zap.String("caller_file", file),
+			zap.Int("caller_line", line),
+			zap.String("caller_func", fnName),
+		)
+	}
+}
+
+//// GinRecovery recover掉项目可能出现的panic，并使用zap记录相关日志
+//func GinRecovery(stack bool) gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		defer func() {
+//			if err := recover(); err != nil {
+//				// Check for a broken connection, as it is not really a
+//				// condition that warrants a panic stack trace.
+//				var brokenPipe bool
+//				if ne, ok := err.(*net.OpError); ok {
+//					if se, ok := ne.Err.(*os.SyscallError); ok {
+//						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
+//							brokenPipe = true
+//						}
+//					}
+//				}
+//
+//				httpRequest, _ := httputil.DumpRequest(c.Request, false)
+//
+//				if brokenPipe {
+//					lg.Error(c.Request.URL.Path,
+//						zap.Any("error", err),
+//						zap.String("request", string(httpRequest)),
+//					)
+//					// If the connection is dead, we can't write a status to it.
+//					c.Error(err.(error)) // nolint: errcheck
+//					c.Abort()
+//					return
+//				}
+//
+//				if stack {
+//					lg.Error("[Recovery from panic]",
+//						zap.Any("error", err),
+//						zap.String("request", string(httpRequest)),
+//						zap.String("stack", string(debug.Stack())),
+//					)
+//				} else {
+//					lg.Error("[Recovery from panic]",
+//						zap.Any("error", err),
+//						zap.String("request", string(httpRequest)),
+//					)
+//				}
+//				c.AbortWithStatus(http.StatusInternalServerError)
+//			}
+//		}()
+//		c.Next()
+//	}
+//}
+
+func Recovery(stack bool) gin.HandlerFunc {
+	defaultMailer := email.NewEmail(&email.SMTPInfo{
+		Port:     global.PrivateSetting.Email.Port,
+		IsSSL:    global.PrivateSetting.Email.IsSSL,
+		Host:     global.PrivateSetting.Email.Host,
+		UserName: global.PrivateSetting.Email.Username,
+		Password: global.PrivateSetting.Email.Password,
+		From:     global.PrivateSetting.Email.From,
+	})
+	return func(ctx *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				// Check for a broken connection, as it is not really a
-				// condition that warrants a panic stack trace.
+				// 检查连接是否断开，因为这并不是真正需要进行恐慌堆栈跟踪的情况
 				var brokenPipe bool
 				if ne, ok := err.(*net.OpError); ok {
 					if se, ok := ne.Err.(*os.SyscallError); ok {
-						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
+						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connections reset by peer") {
 							brokenPipe = true
 						}
 					}
 				}
 
-				httpRequest, _ := httputil.DumpRequest(c.Request, false)
+				// 将请求对象转换为字节切片
+				httpRequest, _ := httputil.DumpRequest(ctx.Request, false)
+				var body string
+				data, ok := ctx.Get(Body)
+				if ok {
+					body = string(data.([]byte))
+				}
+				sendErr := defaultMailer.SendMail( // 短信通知
+					global.PrivateSetting.Email.To,
+					fmt.Sprintf("异常抛出，发生时间：%v\n", time.Now().Format(times.LayoutDate)),
+					fmt.Sprintf("错误信息：%s\n请求信息：%s\n请求body:%s\n调用堆栈信息：%s\n", err, string(httpRequest), body, string(debug.Stack())),
+				)
+				if sendErr != nil {
+					global.Logger.Error(fmt.Sprintf("email.SendMail Error: %v", sendErr.Error()))
+				}
 
 				if brokenPipe {
-					lg.Error(c.Request.URL.Path,
+					global.Logger.Error(ctx.Request.URL.Path,
 						zap.Any("error", err),
-						zap.String("request", string(httpRequest)),
-					)
-					// If the connection is dead, we can't write a status to it.
-					c.Error(err.(error)) // nolint: errcheck
-					c.Abort()
+						zap.String("request", string(httpRequest)))
+					// 如果连接已断开，我们就无法写入状态
+					ctx.Error(err.(error)) // 将错误信息与上下文关联
+					ctx.Abort()            // 阻止调用后续的处理函数
 					return
 				}
-
-				if stack {
-					lg.Error("[Recovery from panic]",
+				if stack { // 如果需要记录堆栈信息
+					global.Logger.Error("[Recovery from panic]",
 						zap.Any("error", err),
 						zap.String("request", string(httpRequest)),
-						zap.String("stack", string(debug.Stack())),
-					)
-				} else {
-					lg.Error("[Recovery from panic]",
+						zap.String("stack", string(debug.Stack()))) // 记录当前 goroutine 的堆栈跟踪信息到日志中
+				} else { // 不需要记录到堆栈信息
+					global.Logger.Error("[Recovery from panic]",
 						zap.Any("error", err),
 						zap.String("request", string(httpRequest)),
-					)
+						zap.String("body", body))
 				}
-				c.AbortWithStatus(http.StatusInternalServerError)
+				ctx.AbortWithStatus(http.StatusInternalServerError) //阻止调用后续的处理函数，并返回“服务器内部错误”的状态码
 			}
 		}()
-		c.Next()
+		ctx.Next()
 	}
 }

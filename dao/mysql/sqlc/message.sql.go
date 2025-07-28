@@ -320,10 +320,14 @@ select m1.id,
        m1.read_ids,
        m1.is_delete,
        count(*) over () as total,
-       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count
-from messages m1
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
+       s.nick_name
+from messages m1,
+     settings s
 where m1.relation_id = ?
   and m1.create_at < ?
+  and m1.relation_id = s.relation_id
+  and s.account_id = m1.account_id
 order by m1.create_at desc
 limit ? offset ?
 `
@@ -355,6 +359,7 @@ type GetMsgsByRelationIDAndTimeRow struct {
 	IsDelete   int32
 	Total      interface{}
 	ReplyCount int64
+	NickName   string
 }
 
 func (q *Queries) GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsByRelationIDAndTimeParams) ([]*GetMsgsByRelationIDAndTimeRow, error) {
@@ -391,6 +396,7 @@ func (q *Queries) GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsBy
 			&i.IsDelete,
 			&i.Total,
 			&i.ReplyCount,
+			&i.NickName,
 		); err != nil {
 			return nil, err
 		}
@@ -403,6 +409,25 @@ func (q *Queries) GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsBy
 		return nil, err
 	}
 	return items, nil
+}
+
+const getNickNameByAccountIDAndRelation = `-- name: GetNickNameByAccountIDAndRelation :one
+select nick_name
+from settings
+where account_id = ?
+  and relation_id = ?
+`
+
+type GetNickNameByAccountIDAndRelationParams struct {
+	AccountID  int64
+	RelationID int64
+}
+
+func (q *Queries) GetNickNameByAccountIDAndRelation(ctx context.Context, arg *GetNickNameByAccountIDAndRelationParams) (string, error) {
+	row := q.queryRow(ctx, q.getNickNameByAccountIDAndRelationStmt, getNickNameByAccountIDAndRelation, arg.AccountID, arg.RelationID)
+	var nick_name string
+	err := row.Scan(&nick_name)
+	return nick_name, err
 }
 
 const getPinMsgsByRelationID = `-- name: GetPinMsgsByRelationID :many

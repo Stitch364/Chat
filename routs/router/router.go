@@ -11,7 +11,8 @@ import (
 
 func NewRouter() (*gin.Engine, *socketio.Server) {
 	r := gin.New()
-	r.Use(middlewares.Cors, middlewares.GinLogger(), middlewares.GinRecovery(true))
+	r.Use(middlewares.Cors2, middlewares.GinLogger(), middlewares.Recovery(true))
+	//r.Use(middlewares.Cors, middlewares.GinLogger2())
 
 	root := r.Group("api", middlewares.LogBody(), middlewares.PasetoAuth())
 	{

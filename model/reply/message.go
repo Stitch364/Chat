@@ -36,12 +36,14 @@ type ParamRlyMsg struct {
 // ParamMsgInfoWithRly 完整的消息详情，包含回复消息
 type ParamMsgInfoWithRly struct {
 	ParamMsgInfo              //消息信息
-	RlyMsg       *ParamRlyMsg `json:"rly_msg"` // 回复消息详情，可能为 nil
+	RlyMsg       *ParamRlyMsg `json:"rly_msg"`   // 回复消息详情，可能为 nil
+	NickName     string       `json:"nick_name"` // 发送者在群中的名字
 }
 
 type ParamGetMsgsRelationIDAndTime struct {
 	List  []*ParamMsgInfoWithRly `json:"list"`  //消息切片
 	Total int64                  `json:"total"` //消息总数
+	//NickName string                 `json:"nick_name"` //用户备注名
 }
 
 type ParamOfferMsgsByAccountIDAndTime struct {

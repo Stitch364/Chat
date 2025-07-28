@@ -92,6 +92,7 @@ type Querier interface {
 	GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentParams) ([]*GetMsgsByContentRow, error)
 	GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsByContentAndRelationParams) ([]*GetMsgsByContentAndRelationRow, error)
 	GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsByRelationIDAndTimeParams) ([]*GetMsgsByRelationIDAndTimeRow, error)
+	GetNickNameByAccountIDAndRelation(ctx context.Context, arg *GetNickNameByAccountIDAndRelationParams) (string, error)
 	GetPinMsgsByRelationID(ctx context.Context, arg *GetPinMsgsByRelationIDParams) ([]*GetPinMsgsByRelationIDRow, error)
 	GetRelationIDByAccountID(ctx context.Context, arg *GetRelationIDByAccountIDParams) (int64, error)
 	GetRelationIDsByAccountIDFromSettings(ctx context.Context, accountID int64) ([]int64, error)

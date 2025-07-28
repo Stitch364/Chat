@@ -5,13 +5,32 @@ import (
 	chat2 "chat/model/chat"
 	"github.com/gin-gonic/gin"
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
+	"github.com/googollee/go-socket.io/engineio/transport"
+	"github.com/googollee/go-socket.io/engineio/transport/polling"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
+	"net/http"
 )
 
 type ws struct {
 }
 
+var allowOriginFunc = func(r *http.Request) bool {
+	return true
+}
+
 func (ws) Init(router *gin.Engine) *socketio.Server {
-	server := socketio.NewServer(nil) // 创建一个 socketIO 服务器对象
+	//server := socketio.NewServer(nil) // 创建一个 socketIO 服务器对象
+	server := socketio.NewServer(&engineio.Options{
+		Transports: []transport.Transport{
+			&polling.Transport{
+				CheckOrigin: allowOriginFunc,
+			},
+			&websocket.Transport{
+				CheckOrigin: allowOriginFunc,
+			},
+		},
+	})
 	{
 		// 定义处理客户端事件的函数
 		server.OnConnect("/", api.Apis.Chat.Handle.OnConnect)

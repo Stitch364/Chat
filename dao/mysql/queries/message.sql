@@ -37,12 +37,22 @@ select m1.id,
        m1.read_ids,
        m1.is_delete,
        count(*) over () as total,
-       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count
-from messages m1
+       (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
+       s.nick_name
+from messages m1,
+     settings s
 where m1.relation_id = ?
   and m1.create_at < ?
+  and m1.relation_id = s.relation_id
+  and s.account_id = m1.account_id
 order by m1.create_at desc
 limit ? offset ?;
+
+-- name: GetNickNameByAccountIDAndRelation :one
+select nick_name
+from settings
+where account_id = ?
+  and relation_id = ?;
 
 -- name: OfferMsgsByAccountIDAndTime :many
 select m1.id,

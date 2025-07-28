@@ -4,9 +4,14 @@ import (
 	"chat/global"
 	"chat/routs/router"
 	"chat/setting"
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 //Go Web开发较通用的脚手架模板
@@ -20,9 +25,9 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	//注册成路由
-	r, ws := router.NewRouter()
-	_ = r.Run(":8080")
+	////注册成路由
+	//r, ws := router.NewRouter()
+	////_ = r.Run(":8080")
 	//sever := http.Server{
 	//	Addr:           global.PublicSetting.Server.HttpPort, //端口号
 	//	Handler:        r,                                    //路由处理器
@@ -31,24 +36,27 @@ func main() {
 	//}
 	//global.Logger.Info("Server started!") //输出日志，服务器已启动
 	//fmt.Println("AppName:", global.PublicSetting.App.Name, "Version:", global.PublicSetting.App.Version, "Address:", global.PublicSetting.Server.HttpPort, "RunMode:", global.PublicSetting.Server.RunMode)
-
-	errChan := make(chan error, 1)
-	defer close(errChan) //延迟关闭错误通道
-
-	//go func() {
-	//	//启动 HTTP 服务器
-	//	err := sever.ListenAndServe()
-	//	if err != nil {
-	//		errChan <- err //将错误发送到错误通道
-	//	}
-	//}()
-
-	defer ws.Close()
-	// 接收并处理网络连接
-	if err := ws.Serve(); err != nil {
-		fmt.Println("Socket.IO server error:", err)
-		errChan <- err
-	}
+	//
+	//errChan := make(chan error, 1)
+	//defer close(errChan) //延迟关闭错误通道
+	//
+	////go func() {
+	////	//启动 HTTP 服务器
+	////	err := sever.ListenAndServe()
+	////	if err != nil {
+	////		errChan <- err //将错误发送到错误通道
+	////	}
+	////}()
+	//
+	//err := sever.ListenAndServe()
+	//fmt.Println("sever.ListenAndServe()---->err", err)
+	//
+	//defer ws.Close()
+	//// 接收并处理网络连接
+	//if err := ws.Serve(); err != nil {
+	//	fmt.Println("Socket.IO server error:", err)
+	//	errChan <- err
+	//}
 
 	//// 启动 Socket.IO 服务器
 	//go func() {
@@ -91,5 +99,50 @@ func main() {
 	//	zap.L().Fatal("Server Shutdown", zap.Error(err))
 	//}
 
+	r, ws := router.NewRouter()
+
+	server := &http.Server{
+		Addr:           global.PublicSetting.Server.HttpPort,
+		Handler:        r,
+		MaxHeaderBytes: 1 << 20,
+	}
+	global.Logger.Info("server start success")
+	fmt.Println("AppName:", global.PublicSetting.App.Name, "Version:", global.PublicSetting.App.Version, "Address:", global.PublicSetting.Server.HttpPort, "RunMode:", global.PublicSetting.Server.RunMode)
+	errChan := make(chan error, 1)
+	defer close(errChan)
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	go func() {
+		defer ws.Close()
+		if err := ws.Serve(); err != nil {
+			errChan <- err
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-errChan:
+		global.Logger.Error(err.Error())
+	case <-quit:
+		global.Logger.Info("Shutdown Server.")
+		///创建一个带超时的上下文（给几秒完成还未处理完的请求）
+		ctx, cancel := context.WithTimeout(context.Background(), global.PublicSetting.Server.DefaultContextTimeout)
+		defer cancel() //延迟取消上下文
+
+		//上下文超时时间内优雅关机（将未处理完的请求处理完再关闭服务），超过超时时间时退出
+		if err := server.Shutdown(ctx); err != nil {
+			global.Logger.Error("Server forced to Shutdown, err:" + err.Error())
+		}
+	}
+
+	fmt.Println("Server exiting")
 	zap.L().Info("Server exiting")
 }

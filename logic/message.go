@@ -19,6 +19,7 @@ import (
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"time"
 )
 
 type message struct {
@@ -50,6 +51,12 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 	if len(data) == 0 {
 		return &reply.ParamGetMsgsRelationIDAndTime{List: []*reply.ParamMsgInfoWithRly{}}, nil
 	}
+	//查询用户备注
+	//NickName, err := dao.Database.DB.GetNickNameByAccountIDAndRelation(ctx, &db.GetNickNameByAccountIDAndRelationParams{
+	//	AccountID:  params.AccountID,
+	//	RelationID: params.RelationID,
+	//})
+
 	result := make([]*reply.ParamMsgInfoWithRly, 0, len(data))
 	var DelMsgSum int64 = 0
 	for _, v := range data {
@@ -119,7 +126,8 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 				//ReadIds:    readIDs,
 				ReplyCount: v.ReplyCount,
 			},
-			RlyMsg: rlyMsg,
+			RlyMsg:   rlyMsg,
+			NickName: v.NickName,
 		})
 	}
 	return &reply.ParamGetMsgsRelationIDAndTime{List: result, Total: TotalToPageTotal(data[0].Total.(int64), params.Limit) - DelMsgSum}, nil
@@ -479,6 +487,9 @@ func (message) RevokeMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
 	}
 	if msgInfo.IsRevoke {
 		return errcodes.MsgAlreadyRevoke
+	}
+	if diffMinutes := int(time.Since(msgInfo.CreateAt).Minutes()); diffMinutes > 2 {
+		return errcodes.MsgRevokeTimeOut
 	}
 	myErr := dao.Database.DB.RevokeMsgWithTx(ctx, msgID, msgInfo.IsPin, msgInfo.IsTop)
 	if myErr != nil {

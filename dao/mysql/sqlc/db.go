@@ -210,6 +210,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getMsgsByRelationIDAndTimeStmt, err = db.PrepareContext(ctx, getMsgsByRelationIDAndTime); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMsgsByRelationIDAndTime: %w", err)
 	}
+	if q.getNickNameByAccountIDAndRelationStmt, err = db.PrepareContext(ctx, getNickNameByAccountIDAndRelation); err != nil {
+		return nil, fmt.Errorf("error preparing query GetNickNameByAccountIDAndRelation: %w", err)
+	}
 	if q.getPinMsgsByRelationIDStmt, err = db.PrepareContext(ctx, getPinMsgsByRelationID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetPinMsgsByRelationID: %w", err)
 	}
@@ -600,6 +603,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getMsgsByRelationIDAndTimeStmt: %w", cerr)
 		}
 	}
+	if q.getNickNameByAccountIDAndRelationStmt != nil {
+		if cerr := q.getNickNameByAccountIDAndRelationStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getNickNameByAccountIDAndRelationStmt: %w", cerr)
+		}
+	}
 	if q.getPinMsgsByRelationIDStmt != nil {
 		if cerr := q.getPinMsgsByRelationIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getPinMsgsByRelationIDStmt: %w", cerr)
@@ -826,6 +834,7 @@ type Queries struct {
 	getMsgsByContentStmt                      *sql.Stmt
 	getMsgsByContentAndRelationStmt           *sql.Stmt
 	getMsgsByRelationIDAndTimeStmt            *sql.Stmt
+	getNickNameByAccountIDAndRelationStmt     *sql.Stmt
 	getPinMsgsByRelationIDStmt                *sql.Stmt
 	getRelationIDByAccountIDStmt              *sql.Stmt
 	getRelationIDsByAccountIDFromSettingsStmt *sql.Stmt
@@ -919,6 +928,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getMsgsByContentStmt:                      q.getMsgsByContentStmt,
 		getMsgsByContentAndRelationStmt:           q.getMsgsByContentAndRelationStmt,
 		getMsgsByRelationIDAndTimeStmt:            q.getMsgsByRelationIDAndTimeStmt,
+		getNickNameByAccountIDAndRelationStmt:     q.getNickNameByAccountIDAndRelationStmt,
 		getPinMsgsByRelationIDStmt:                q.getPinMsgsByRelationIDStmt,
 		getRelationIDByAccountIDStmt:              q.getRelationIDByAccountIDStmt,
 		getRelationIDsByAccountIDFromSettingsStmt: q.getRelationIDsByAccountIDFromSettingsStmt,

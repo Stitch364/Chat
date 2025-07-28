@@ -190,10 +190,18 @@ tips: 模糊查询不能用 '%name%' 要防止SQL注入
     ps：sqlc不支持触发器，会报错
 
 7/22 周二 多云转阴
-    1.修改了application部分--> 删除好友后可再次申请；申请被拒绝后7天可再次发起申请
+    1.修改了application部分--> 删除好友后可再次申请；申请被拒绝后7天可再次发起申请（application表新增create_at为主键）
     2.修改了setting/friend/name的Bug（子查询返回多个值）；触发原因暂时不清楚，未能复现
     3.重新部署
-    4.推送
+    4.提交
+
+7/23 周三 多云转晴
+    1.推送
+
+7/26 周六 晴
+    1.经过种种调试，改Bug，看资料，问AI。终于，调试好了Socket.io部分
+    2.URL=localhost:8080/chat?EIO=2&transport=websocket
+    3.部署服务器
 
 写到了
 8.137.23.88

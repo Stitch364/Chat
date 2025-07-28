@@ -22,23 +22,27 @@ var (
 	ApplicationNotExists        = errcode.NewErr(3002, "申请不存在")
 	ApplicationNotValid         = errcode.NewErr(3003, "申请不合法")
 	ApplicationRepeatOpt        = errcode.NewErr(3004, "重复操作申请")
-	UserHasAccount              = errcode.NewErr(3005, "用户存在账户")     // 删除用户时用户仍存在账户
-	AccountGroupLeader          = errcode.NewErr(3006, "账号作为群主不能删除") // 删除账户时，账户存在群主身份
 	DeleteNotLegal              = errcode.NewErr(3007, "不能删除自己")
 	CoolingOffPeriod            = errcode.NewErr(3008, "7天冷却期内不可发送申请")
-	RelationExists              = errcode.NewErr(4001, "关系已经存在")
 	RelationNotExists           = errcode.NewErr(4002, "关系不存在")
 	MsgNotExists                = errcode.NewErr(5001, "消息不存在")
 	MsgAlreadyRevoke            = errcode.NewErr(5002, "消息已经撤销")
 	RlyMsgHasRevoked            = errcode.NewErr(5003, "回复消息已经撤销")
 	RlyMsgNotOneRelation        = errcode.NewErr(5004, "回复的消息和发送的消息并非在一个群")
-	MsgAlreadyRead              = errcode.NewErr(5005, "消息已经阅读")
+	MsgRevokeTimeOut            = errcode.NewErr(5006, "消息撤销时间已过")
 	NotLeader                   = errcode.NewErr(7001, "非群主")
 	IsLeader                    = errcode.NewErr(7002, "群主不可退群")
 	NotGroupMember              = errcode.NewErr(7003, "非该群成员")
-	FailedStore                 = errcode.NewErr(8001, "存储文件失败")
-	FileNotExist                = errcode.NewErr(8002, "文件不存在")
-	FileTooBig                  = errcode.NewErr(8004, "文件过大")
-	FileDeleteFailed            = errcode.NewErr(8003, "文件删除失败")
-	NotifyNotExist              = errcode.NewErr(9001, "通知不存在")
+	//UserHasAccount              = errcode.NewErr(3005, "用户存在账户")     // 删除用户时用户仍存在账户
+	//AccountGroupLeader          = errcode.NewErr(3006, "账号作为群主不能删除") // 删除账户时，账户存在群主身份
+
+	//RelationExists              = errcode.NewErr(4001, "关系已经存在")
+
+	//MsgAlreadyRead              = errcode.NewErr(5005, "消息已经阅读")
+
+	//FailedStore                 = errcode.NewErr(8001, "存储文件失败")
+	//FileNotExist                = errcode.NewErr(8002, "文件不存在")
+	//FileTooBig                  = errcode.NewErr(8004, "文件过大")
+	//FileDeleteFailed            = errcode.NewErr(8003, "文件删除失败")
+	//NotifyNotExist              = errcode.NewErr(9001, "通知不存在")
 )
