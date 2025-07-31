@@ -91,12 +91,23 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 					continue
 				}
 			}
+			data1, err := dao.Database.DB.GetAccountInfoByID(ctx, &db.GetAccountInfoByIDParams{
+				RelationID: rlyMsgInfo.RelationID,
+				AccountID:  rlyMsgInfo.AccountID.Int64,
+			})
+			if err != nil {
+				global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+				continue
+			}
 			rlyMsg = &reply.ParamRlyMsg{
-				MsgID:      v.RlyMsgID.Int64,
-				MsgType:    string(rlyMsgInfo.MsgType),
-				MsgContent: rlyContent,
-				MsgExtend:  rlyExtend,
-				IsRevoked:  rlyMsgInfo.IsRevoke,
+				MsgID:       v.RlyMsgID.Int64,
+				MsgType:     string(rlyMsgInfo.MsgType),
+				MsgContent:  rlyContent,
+				MsgExtend:   rlyExtend,
+				IsRevoked:   rlyMsgInfo.IsRevoke,
+				AccountID:   rlyMsgInfo.AccountID.Int64,
+				NickName:    data1.NickName,
+				AccountName: data1.Name,
 			}
 		}
 		//不显示自己删除的消息
@@ -108,29 +119,38 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 			DelMsgSum++
 			continue
 		}
+		data2, err := dao.Database.DB.GetAccountInfoByID(ctx, &db.GetAccountInfoByIDParams{
+			RelationID: v.RelationID,
+			AccountID:  v.AccountID.Int64,
+		})
+		if err != nil {
+			global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+			continue
+		}
 		result = append(result, &reply.ParamMsgInfoWithRly{
 			ParamMsgInfo: reply.ParamMsgInfo{
-				ID:         v.ID,
-				NotifyType: string(v.NotifyType),
-				MsgType:    string(v.MsgType),
-				MsgContent: content,
-				MsgExtend:  extend,
-				FileID:     v.FileID.Int64,
-				AccountID:  v.AccountID.Int64,
-				RelationID: v.RelationID,
-				CreateAt:   v.CreateAt,
-				IsRevoke:   v.IsRevoke,
-				IsTop:      v.IsTop,
-				IsPin:      v.IsPin,
-				PinTime:    v.PinTime,
+				ID:          v.ID,
+				NotifyType:  string(v.NotifyType),
+				MsgType:     string(v.MsgType),
+				MsgContent:  content,
+				MsgExtend:   extend,
+				FileID:      v.FileID.Int64,
+				AccountID:   v.AccountID.Int64,
+				AccountName: data2.Name,
+				NickName:    data2.NickName,
+				RelationID:  v.RelationID,
+				CreateAt:    v.CreateAt,
+				IsRevoke:    v.IsRevoke,
+				IsTop:       v.IsTop,
+				IsPin:       v.IsPin,
+				PinTime:     v.PinTime,
 				//ReadIds:    readIDs,
 				ReplyCount: v.ReplyCount,
 			},
-			RlyMsg:   rlyMsg,
-			NickName: v.NickName,
+			RlyMsg: rlyMsg,
 		})
 	}
-	return &reply.ParamGetMsgsRelationIDAndTime{List: result, Total: TotalToPageTotal(data[0].Total.(int64), params.Limit) - DelMsgSum}, nil
+	return &reply.ParamGetMsgsRelationIDAndTime{List: result, Total: TotalToPageTotal(data[0].Total.(int64)-DelMsgSum, params.Limit)}, nil
 }
 
 func GetMsgInfoByID(ctx context.Context, msgID int64) (*db.Message, errcode.Err) {
@@ -305,15 +325,17 @@ func getMsgsByContentAndRelation(ctx *gin.Context, params *db.GetMsgsByContentAn
 			continue
 		}
 		result = append(result, &reply.ParamBriefMsgInfo{
-			ID:         v.ID,
-			NotifyType: string(v.NotifyType),
-			MsgType:    string(v.MsgType),
-			MsgContent: v.MsgContent,
-			Extend:     extend,
-			FileID:     v.FileID.Int64,
-			AccountID:  v.AccountID.Int64,
-			RelationID: v.RelationID,
-			CreateAt:   v.CreateAt,
+			ID:          v.ID,
+			NotifyType:  string(v.NotifyType),
+			MsgType:     string(v.MsgType),
+			MsgContent:  v.MsgContent,
+			Extend:      extend,
+			FileID:      v.FileID.Int64,
+			AccountID:   v.AccountID.Int64,
+			AccountName: v.Name,
+			NickName:    v.NickName,
+			RelationID:  v.RelationID,
+			CreateAt:    v.CreateAt,
 		})
 	}
 	return &reply.ParamGetMsgsByContent{
@@ -370,15 +392,17 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 			continue
 		}
 		result = append(result, &reply.ParamBriefMsgInfo{
-			ID:         v.ID,
-			NotifyType: string(v.NotifyType),
-			MsgType:    string(v.MsgType),
-			MsgContent: v.MsgContent,
-			Extend:     extend,
-			FileID:     v.FileID.Int64,
-			AccountID:  v.AccountID.Int64,
-			RelationID: v.RelationID,
-			CreateAt:   v.CreateAt,
+			ID:          v.ID,
+			NotifyType:  string(v.NotifyType),
+			MsgType:     string(v.MsgType),
+			MsgContent:  v.MsgContent,
+			Extend:      extend,
+			FileID:      v.FileID.Int64,
+			AccountID:   v.AccountID.Int64,
+			AccountName: v.Name,
+			NickName:    v.NickName,
+			RelationID:  v.RelationID,
+			CreateAt:    v.CreateAt,
 		})
 	}
 	return &reply.ParamGetMsgsByContent{

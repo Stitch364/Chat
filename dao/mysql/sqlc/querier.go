@@ -57,6 +57,7 @@ type Querier interface {
 	GetAccountIDsByRelationID(ctx context.Context, relationID int64) ([]int64, error)
 	// {user_id:int64}
 	GetAccountIDsByUserID(ctx context.Context, userID int64) ([]int64, error)
+	GetAccountInfoByID(ctx context.Context, arg *GetAccountInfoByIDParams) (*GetAccountInfoByIDRow, error)
 	// {name:string, user_id:int64, page:int64, page_size:int64}
 	GetAccountsByName(ctx context.Context, arg *GetAccountsByNameParams) ([]*GetAccountsByNameRow, error)
 	// {user_id:int64}

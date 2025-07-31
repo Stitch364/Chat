@@ -19,6 +19,12 @@ from messages
 where id = ?
 limit 1;
 
+-- name: GetAccountInfoByID :one
+select accounts.name,settings.nick_name
+from accounts
+join settings on accounts.id = settings.account_id  and relation_id = ?
+where account_id = ?;
+
 -- name: GetMsgsByRelationIDAndTime :many
 select m1.id,
        m1.notify_type,
@@ -132,12 +138,15 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       s.nick_name,
        m1.relation_id,
        m1.create_at,
        m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = s.relation_id and s.account_id = ?
+         join accounts a on a.id = m1.account_id
 where (not is_revoke)
     and m1.msg_content like concat('%', ?, '%')
 order by m1.create_at desc
@@ -151,12 +160,15 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       s.nick_name,
        m1.relation_id,
        m1.create_at,
        m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = ? and m1.relation_id = s.relation_id and s.account_id = ?
+         join accounts a on a.id = m1.account_id
 where (not is_revoke)
   and m1.msg_content like concat('%', ?, '%')
 order by m1.create_at desc

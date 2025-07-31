@@ -66,6 +66,30 @@ func (q *Queries) GetAccountIDsByMsgID(ctx context.Context, id int64) (*GetAccou
 	return &i, err
 }
 
+const getAccountInfoByID = `-- name: GetAccountInfoByID :one
+select accounts.name,settings.nick_name
+from accounts
+join settings on accounts.id = settings.account_id  and relation_id = ?
+where account_id = ?
+`
+
+type GetAccountInfoByIDParams struct {
+	RelationID int64
+	AccountID  int64
+}
+
+type GetAccountInfoByIDRow struct {
+	Name     string
+	NickName string
+}
+
+func (q *Queries) GetAccountInfoByID(ctx context.Context, arg *GetAccountInfoByIDParams) (*GetAccountInfoByIDRow, error) {
+	row := q.queryRow(ctx, q.getAccountInfoByIDStmt, getAccountInfoByID, arg.RelationID, arg.AccountID)
+	var i GetAccountInfoByIDRow
+	err := row.Scan(&i.Name, &i.NickName)
+	return &i, err
+}
+
 const getMessageByID = `-- name: GetMessageByID :one
 select id, notify_type, msg_type, msg_content, coalesce(msg_extend,'[]'), file_id, account_id,
        rly_msg_id, relation_id, create_at, is_revoke, is_top, is_pin, pin_time, read_ids, is_delete
@@ -146,12 +170,15 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       s.nick_name,
        m1.relation_id,
        m1.create_at,
        m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = s.relation_id and s.account_id = ?
+         join accounts a on a.id = m1.account_id
 where (not is_revoke)
     and m1.msg_content like concat('%', ?, '%')
 order by m1.create_at desc
@@ -173,6 +200,8 @@ type GetMsgsByContentRow struct {
 	MsgExtend  json.RawMessage
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
+	Name       string
+	NickName   string
 	RelationID int64
 	CreateAt   time.Time
 	IsDelete   int32
@@ -201,6 +230,8 @@ func (q *Queries) GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentPar
 			&i.MsgExtend,
 			&i.FileID,
 			&i.AccountID,
+			&i.Name,
+			&i.NickName,
 			&i.RelationID,
 			&i.CreateAt,
 			&i.IsDelete,
@@ -227,12 +258,15 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       s.nick_name,
        m1.relation_id,
        m1.create_at,
        m1.is_delete,
        count(*) over () as total
 from messages m1
          join settings s on m1.relation_id = ? and m1.relation_id = s.relation_id and s.account_id = ?
+         join accounts a on a.id = m1.account_id
 where (not is_revoke)
   and m1.msg_content like concat('%', ?, '%')
 order by m1.create_at desc
@@ -255,6 +289,8 @@ type GetMsgsByContentAndRelationRow struct {
 	MsgExtend  json.RawMessage
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
+	Name       string
+	NickName   string
 	RelationID int64
 	CreateAt   time.Time
 	IsDelete   int32
@@ -284,6 +320,8 @@ func (q *Queries) GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsB
 			&i.MsgExtend,
 			&i.FileID,
 			&i.AccountID,
+			&i.Name,
+			&i.NickName,
 			&i.RelationID,
 			&i.CreateAt,
 			&i.IsDelete,

@@ -117,6 +117,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getAccountIDsByUserIDStmt, err = db.PrepareContext(ctx, getAccountIDsByUserID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountIDsByUserID: %w", err)
 	}
+	if q.getAccountInfoByIDStmt, err = db.PrepareContext(ctx, getAccountInfoByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetAccountInfoByID: %w", err)
+	}
 	if q.getAccountsByNameStmt, err = db.PrepareContext(ctx, getAccountsByName); err != nil {
 		return nil, fmt.Errorf("error preparing query GetAccountsByName: %w", err)
 	}
@@ -446,6 +449,11 @@ func (q *Queries) Close() error {
 	if q.getAccountIDsByUserIDStmt != nil {
 		if cerr := q.getAccountIDsByUserIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getAccountIDsByUserIDStmt: %w", cerr)
+		}
+	}
+	if q.getAccountInfoByIDStmt != nil {
+		if cerr := q.getAccountInfoByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getAccountInfoByIDStmt: %w", cerr)
 		}
 	}
 	if q.getAccountsByNameStmt != nil {
@@ -803,6 +811,7 @@ type Queries struct {
 	getAccountIDsByMsgIDStmt                  *sql.Stmt
 	getAccountIDsByRelationIDStmt             *sql.Stmt
 	getAccountIDsByUserIDStmt                 *sql.Stmt
+	getAccountInfoByIDStmt                    *sql.Stmt
 	getAccountsByNameStmt                     *sql.Stmt
 	getAccountsByUserIDStmt                   *sql.Stmt
 	getAcountIDsByUserIDStmt                  *sql.Stmt
@@ -897,6 +906,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getAccountIDsByMsgIDStmt:                  q.getAccountIDsByMsgIDStmt,
 		getAccountIDsByRelationIDStmt:             q.getAccountIDsByRelationIDStmt,
 		getAccountIDsByUserIDStmt:                 q.getAccountIDsByUserIDStmt,
+		getAccountInfoByIDStmt:                    q.getAccountInfoByIDStmt,
 		getAccountsByNameStmt:                     q.getAccountsByNameStmt,
 		getAccountsByUserIDStmt:                   q.getAccountsByUserIDStmt,
 		getAcountIDsByUserIDStmt:                  q.getAcountIDsByUserIDStmt,
