@@ -25,6 +25,7 @@ type TXer interface {
 	AddSettingWithTx(ctx context.Context, rdb *operate.RDB, accountID, relationID int64, isLeader bool) error
 	TransferGroupWithTx(ctx context.Context, accountID, relationID, toAccountID int64) error
 	DeleteSettingWithTx(ctx context.Context, rdb *operate.RDB, accountID, relationID int64) error
+	UploadGroupAvatarWithTx(ctx context.Context, arg db.CreateFileParams) error
 }
 
 // MySQLDB 实现了 DB 接口

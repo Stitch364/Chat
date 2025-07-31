@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"mime/multipart"
 	"time"
 )
 
@@ -11,6 +12,13 @@ const (
 	MsgTypeText MsgType = "text"
 	MsgTypeFile MsgType = "file"
 )
+
+type CreateFileMsg struct {
+	AccountID  int64
+	RelationID int64
+	RlyMsgID   int64
+	File       *multipart.FileHeader
+}
 
 type Remind struct {
 	Idx       int64 `json:"idx,omitempty" binding:"required,gte=1" validate:"required,gte=1"`        // 第几个 @

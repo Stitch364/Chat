@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type ParamCreateFileMsg struct {
+	ID         int64     `json:"id,omitempty"`          // 消息 ID
+	MsgContent string    `json:"msg_content,omitempty"` // 消息内容，文件则为 url
+	FileID     int64     `json:"file_id,omitempty"`     // 文件 ID
+	CreateAt   time.Time `json:"create_at"`             // 创建时间
+}
+
 // ParamMsgInfo 消息的所有信息
 type ParamMsgInfo struct {
 	ID          int64            `json:"id,omitempty"`           // 消息 ID

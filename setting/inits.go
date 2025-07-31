@@ -11,6 +11,7 @@ type group struct {
 	GenerateID generateID
 	Chat       chat
 	Load       load
+	OSS        oss
 }
 
 var Group = new(group)
@@ -27,4 +28,5 @@ func Inits() {
 	Group.GenerateID.Init()
 	Group.Chat.Init()
 	Group.Load.Init()
+	Group.OSS.Init()
 }

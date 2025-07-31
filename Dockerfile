@@ -11,7 +11,7 @@ ENV GO111MODULE=on \
 WORKDIR /build
 
 # 将代码复制到容器中
-#COPY .env .
+COPY .env .
 COPY go.mod .
 COPY go.sum .
 # 下载依赖信息
@@ -46,7 +46,7 @@ RUN set -eux; \
 
 # 从builder镜像中把静态文件拷贝到当前目录
 COPY ./wait-for.sh /
-#COPY .env ./
+COPY .env ./
 # 关键修复：直接复制本地 config 目录到容器内的 /config 目录
 COPY ./config /config
 

@@ -5,6 +5,12 @@ insert into messages
 values
 (?,?,?,JSON_ARRAY(),?,?,?,?);
 
+-- name: CreateMessageReturn :one
+SELECT
+    id, msg_content, COALESCE(msg_extend,'{}'), file_id, create_at
+FROM messages
+WHERE id = LAST_INSERT_ID();
+
 -- name: GetMessageInfoTx :one
 SELECT id, msg_content, msg_extend,file_id, create_at
 FROM messages

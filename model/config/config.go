@@ -31,12 +31,12 @@ type PublicConfig struct {
 }
 
 type PrivateConfig struct {
-	Mysql MysqlConfig `yaml:"Mysql"`
-	Redis RedisConfig `yaml:"Redis"`
-	Email Email       `yaml:"Email"`
-	Token Token       `yaml:"Token"`
-	//HuaWeiOBS  HuaWeiOBS        `yaml:"HuaWeiOBS"`
-	RocketMQ RocketMQ `yaml:"RocketMQ"`
+	Mysql     MysqlConfig `yaml:"Mysql"`
+	Redis     RedisConfig `yaml:"Redis"`
+	Email     Email       `yaml:"Email"`
+	Token     Token       `yaml:"Token"`
+	HuaWeiOBS HuaWeiOBS   `yaml:"HuaWeiOBS"`
+	RocketMQ  RocketMQ    `yaml:"RocketMQ"`
 }
 
 type LogConfig struct {
@@ -144,6 +144,20 @@ type Worker struct {
 	TaskChanCapacity   int `yaml:"TaskChanCapacity"`   // 任务队列容量
 	WorkerChanCapacity int `yaml:"WorkerChanCapacity"` // 工作队列容量
 	WorkerNum          int `yaml:"WorkerNum"`          // 工作池数
+}
+
+type HuaWeiOBS struct {
+	// 前两个字段推荐从 系统环境变量中获取
+	AccessKeyID      string // 访问 OBS 所需的密钥 ID
+	SecretAccessKey  string // 访问 OBS 所需的密钥密钥
+	BucketName       string `yaml:"BucketName"`       // 存储桶名称
+	BucketUrl        string `yaml:"BucketUrl"`        // 存储桶 URL
+	Location         string `yaml:"Location"`         // 存储桶所在区域，必须和传入 Endpoint 中 Region 保持一致
+	Endpoint         string `yaml:"Endpoint"`         // OBS 服务的 Endpoint，用与访问 OBS 的 API
+	BasePath         string `yaml:"BasePath"`         // 上传文件时，文件在存储桶中的基础路径
+	AvatarType       string `yaml:"FileType"`         // 头像类型
+	AccountAvatarUrl string `yaml:"AccountAvatarUrl"` // 账户头像 URL（存储桶中存储账户头像的一个特定路径）
+	GroupAvatarUrl   string `yaml:"GroupAvatarUrl"`   // 群组头像 URL（存储桶中存储群组头像的一个特定路径）
 }
 
 type RocketMQ struct {

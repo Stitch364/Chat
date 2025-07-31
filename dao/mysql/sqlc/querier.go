@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -16,10 +17,22 @@ type Querier interface {
 	CreateAccount(ctx context.Context, arg *CreateAccountParams) error
 	// {account1_id:int64,account2_id:int64,apply_msg:string}
 	CreateApplication(ctx context.Context, arg *CreateApplicationParams) error
+	// -- name: CreateFile :one
+	// START TRANSACTION;
+	// INSERT INTO files (
+	//     file_name, file_type, file_size, `key`, url, relation_id, account_id
+	// ) VALUES (
+	//              ?, ?, ?, ?, ?, ?, ?
+	//          );
+	// SELECT * FROM files
+	// WHERE file_id = LAST_INSERT_ID();
+	// COMMIT;
+	CreateFile(ctx context.Context, arg *CreateFileParams) error
 	CreateFriendRelation(ctx context.Context, arg *CreateFriendRelationParams) error
 	CreateGroupRelation(ctx context.Context, arg *CreateGroupRelationParams) error
 	// {notify_type:string,msg_type:string}
 	CreateMessage(ctx context.Context, arg *CreateMessageParams) error
+	CreateMessageReturn(ctx context.Context) (*CreateMessageReturnRow, error)
 	CreateSetting(ctx context.Context, arg *CreateSettingParams) error
 	// {email:string,password:string}
 	CreateUser(ctx context.Context, arg *CreateUserParams) error
@@ -29,6 +42,7 @@ type Querier interface {
 	DeleteAccountsByUserID(ctx context.Context, userID int64) error
 	// {account1_id:int64,account2_id:int64}
 	DeleteApplication(ctx context.Context, arg *DeleteApplicationParams) error
+	DeleteFileByID(ctx context.Context, id int64) error
 	DeleteFriendRelationsByAccountID(ctx context.Context, arg *DeleteFriendRelationsByAccountIDParams) error
 	DeleteRelation(ctx context.Context, id int64) error
 	DeleteSetting(ctx context.Context, arg *DeleteSettingParams) error
@@ -73,6 +87,11 @@ type Querier interface {
 	GetApplications(ctx context.Context, arg *GetApplicationsParams) ([]*GetApplicationsRow, error)
 	GetApplicationsCreatTime(ctx context.Context, arg *GetApplicationsCreatTimeParams) (time.Time, error)
 	GetApplicationsStatus(ctx context.Context, arg *GetApplicationsStatusParams) (ApplicationsStatus, error)
+	GetCreateFile(ctx context.Context, fileKey string) (*File, error)
+	GetFileByRelation(ctx context.Context, relationID sql.NullInt64) ([]*File, error)
+	GetFileByRelationID(ctx context.Context, relationID sql.NullInt64) ([]*File, error)
+	GetFileDetailsByID(ctx context.Context, id int64) (*File, error)
+	GetFileKeyByID(ctx context.Context, id int64) (string, error)
 	GetFriendPinSettingsOrderByPinTime(ctx context.Context, arg *GetFriendPinSettingsOrderByPinTimeParams) ([]*GetFriendPinSettingsOrderByPinTimeRow, error)
 	GetFriendRelationByID(ctx context.Context, id int64) (*GetFriendRelationByIDRow, error)
 	GetFriendRelationIDsByAccountID(ctx context.Context, arg *GetFriendRelationIDsByAccountIDParams) ([]int64, error)
@@ -80,6 +99,7 @@ type Querier interface {
 	GetFriendSettingsByName(ctx context.Context, arg *GetFriendSettingsByNameParams) ([]*GetFriendSettingsByNameRow, error)
 	GetFriendSettingsOrderByName(ctx context.Context, arg *GetFriendSettingsOrderByNameParams) ([]*GetFriendSettingsOrderByNameRow, error)
 	GetFriendShowSettingsOrderByShowTime(ctx context.Context, arg *GetFriendShowSettingsOrderByShowTimeParams) ([]*GetFriendShowSettingsOrderByShowTimeRow, error)
+	GetGroupAvatar(ctx context.Context, relationID sql.NullInt64) (*File, error)
 	GetGroupList(ctx context.Context, arg *GetGroupListParams) ([]*GetGroupListRow, error)
 	GetGroupMembersByID(ctx context.Context, arg *GetGroupMembersByIDParams) ([]*GetGroupMembersByIDRow, error)
 	GetGroupPinSettingsOrderByPinTime(ctx context.Context, arg *GetGroupPinSettingsOrderByPinTimeParams) ([]*GetGroupPinSettingsOrderByPinTimeRow, error)
@@ -113,6 +133,7 @@ type Querier interface {
 	UpdateAccountAvatar(ctx context.Context, arg *UpdateAccountAvatarParams) error
 	// {status:string,refuse_msg:string,account1_id:int64,account2_id:int64}
 	UpdateApplication(ctx context.Context, arg *UpdateApplicationParams) error
+	UpdateGroupAvatar(ctx context.Context, arg *UpdateGroupAvatarParams) error
 	UpdateGroupRelation(ctx context.Context, arg *UpdateGroupRelationParams) error
 	UpdateMsgDelete(ctx context.Context, arg *UpdateMsgDeleteParams) error
 	UpdateMsgPin(ctx context.Context, arg *UpdateMsgPinParams) error

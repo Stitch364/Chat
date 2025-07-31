@@ -17,7 +17,12 @@ E:\Program Files\GO\my_chat\logic\application.go 新增了申请状态 '等待�
 
 task.UpdateMsgState 未实现（已实现）
 
-controller/api/group.go 中的 UpdateGroup 方法更新头像未实现，涉及文件
+controller/api/group.go 中的 UpdateGroup 方法更新头像未实现，涉及文件（已实现）
 
-删除好友后无法再发起好友申请，应更改查询申请信息的逻辑(已实现)--> 删除好友后可再次申请；申请被拒绝后7天后（申请的创建时间，改为拒绝后开始的时间好点）可再次申请
+删除好友后无法再发起好友申请，应更改查询申请信息的逻辑--> 删除好友后可再次申请；(已实现)
+
+申请被拒绝后7天后（申请的创建时间，改为拒绝后开始的时间好点）可再次申请
+
+sqlc 的 CreateMessageReturn 使用了 LAST_INSERT_ID()，并且没有使用事务，高并发下会出现错误
+
 

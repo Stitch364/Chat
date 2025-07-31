@@ -12,6 +12,7 @@ type message struct {
 func (message) Init(router *gin.RouterGroup) {
 	r := router.Group("/message", middlewares.MustAccount())
 	{
+		r.POST("file", api.Apis.Message.CreateFileMsg)
 
 		update := r.Group("update")
 		{

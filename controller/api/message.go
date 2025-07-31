@@ -16,6 +16,27 @@ import (
 type message struct {
 }
 
+func (message) CreateFileMsg(ctx *gin.Context) {
+	reply := app.NewResponse(ctx)
+	params := new(request.ParamCreateFileMsg)
+	if err := ctx.ShouldBind(params); err != nil {
+		reply.Reply(errcode.ErrParamsNotValid.WithDetails(err.Error()))
+		return
+	}
+	content, ok := middlewares.GetTokenContent(ctx)
+	if !ok || content.TokenType != model.AccountToken {
+		reply.Reply(errcodes.AuthNotExist)
+		return
+	}
+	result, err := logic.Logics.Message.CreateFileMsg(ctx, model.CreateFileMsg{
+		AccountID:  content.ID,
+		RelationID: params.RelationID,
+		RlyMsgID:   params.RlyMsg,
+		File:       params.File,
+	})
+	reply.Reply(err, result)
+}
+
 func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context) {
 	//1.获取参数和参数校验
 	//NewResponse就是包装一下ctx

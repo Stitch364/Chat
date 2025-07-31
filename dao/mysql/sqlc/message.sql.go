@@ -43,6 +43,34 @@ func (q *Queries) CreateMessage(ctx context.Context, arg *CreateMessageParams) e
 	return err
 }
 
+const createMessageReturn = `-- name: CreateMessageReturn :one
+SELECT
+    id, msg_content, COALESCE(msg_extend,'{}'), file_id, create_at
+FROM messages
+WHERE id = LAST_INSERT_ID()
+`
+
+type CreateMessageReturnRow struct {
+	ID         int64
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	CreateAt   time.Time
+}
+
+func (q *Queries) CreateMessageReturn(ctx context.Context) (*CreateMessageReturnRow, error) {
+	row := q.queryRow(ctx, q.createMessageReturnStmt, createMessageReturn)
+	var i CreateMessageReturnRow
+	err := row.Scan(
+		&i.ID,
+		&i.MsgContent,
+		&i.MsgExtend,
+		&i.FileID,
+		&i.CreateAt,
+	)
+	return &i, err
+}
+
 const getAccountIDsByMsgID = `-- name: GetAccountIDsByMsgID :one
 select account1_id, account2_id
 from relations r

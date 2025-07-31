@@ -128,8 +128,8 @@ func (group) UpdateGroup(ctx *gin.Context) {
 	if err != nil {
 		rly.Reply(err, result)
 	}
-	//avatar, err := logic.Logics.File.UploadGroupAvatar(ctx, params.Avatar, content.ID, params.RelationID)
-	//result.Avatar = avatar.URL
+	avatar, err := logic.Logics.File.UploadGroupAvatar(ctx, params.Avatar, content.ID, params.RelationID)
+	result.Avatar = avatar.URL
 	result.Avatar = ""
 	rly.Reply(err, result)
 }

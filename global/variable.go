@@ -4,12 +4,12 @@ import (
 	"chat/manager"
 	"chat/model/config"
 	"chat/pkg/emailMark"
+	upload "github.com/Dearlimg/Goutils/pkg/upload/obs"
 	"github.com/XYYSWK/Lutils/pkg/app"
 	"github.com/XYYSWK/Lutils/pkg/generateID/snowflake"
 	"github.com/XYYSWK/Lutils/pkg/goroutine/work"
 	"github.com/XYYSWK/Lutils/pkg/logger"
 	"github.com/XYYSWK/Lutils/pkg/token"
-	upload "github.com/XYYSWK/Lutils/pkg/upload/obs"
 )
 
 var (
@@ -22,5 +22,5 @@ var (
 	EmailMark      *emailMark.EmailMark // 验证码
 	GenerateID     *snowflake.Snowflake //snowflake 雪花算法生成的 ID
 	ChatMap        *manager.ChatMap     // 聊天链接管理器
-	OBS            upload.OBS
+	OSS            upload.OSS
 )
