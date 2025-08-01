@@ -25,6 +25,15 @@ Token:
   AccountTokenDuration: 24h # 账户 token 的有效期限
   AuthorizationKey: Authorization
   AuthorizationType: Bearer
+HuaWeiOBS:
+  BucketName: your_bucket_name # 存储桶名称
+  BucketUrl: your_bucket_url # 存储桶 URL
+  Location: location # 成都
+  Endpoint: your_endpoint # 成都
+  BasePath: uploads/ # 上传文件时，文件在存储桶中的基础路径
+  AvatarType: NotAvatar
+  AccountAvatarUrl: account_avatars/
+  GroupAvatarUrl: group_avatars/ # 群组头像 URL
 RocketMQ:
   Addr: "IP"
   Port: port

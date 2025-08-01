@@ -207,6 +207,10 @@ tips: 模糊查询不能用 '%name%' 要防止SQL注入
     1.socket.io的send_msg中在postman中发送的必须是Text类型JSON格式的数据
     ps:Go语言目前使用的这个包不能传JSON类型数据，会导致连接直接断开
 
+7/31 周四 晴
+    1.所有消息接口reply新增name和nick_name字段
+    2.完成了file部分的接口；以及测试，可以成功上传文件
+
 写到了
 8.137.23.88
 

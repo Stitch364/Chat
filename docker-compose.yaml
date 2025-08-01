@@ -1,0 +1,61 @@
+version: '1'
+
+networks:
+  my_net:
+    driver: bridge
+
+services:
+  mysql1:
+    image: mysql:latest
+    container_name: mysql1
+    restart: always
+    privileged: true
+    ports:
+      - "3306:3306"
+    networks:
+      - my_net
+    volumes:
+      - /app/mysql/log:/var/log/mysql
+      - /app/mysql/data:/var/lib/mysql
+      - /app/mysql/conf:/etc/mysql/conf.d
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+
+  redis1:
+    image: redis:7.4.1
+    container_name: redis1
+    restart: always
+    privileged: true
+    ports:
+      - "6379:6379"
+    networks:
+      - my_net
+    volumes:
+      - /app/redis/conf/redis.conf:/etc/redis/redis.conf
+      - /app/redis/data:/data
+    command: redis-server /etc/redis/redis.conf
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:4.9.3
+    container_name: rocketmq-namesrv
+    restart: always
+    ports:
+      - "9876:9876"
+    networks:
+      - my_net
+    volumes:
+      - /home/docker/mount/rocketmq/namesrv/logs:/root/logs
+      - /home/docker/mount/rocketmq/namesrv/store:/root/store
+    command: sh mqnamesrv
+
+  chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: goweb_app
+    container_name: chat
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - my_net
