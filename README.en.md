@@ -1,4 +1,4 @@
-# Chat Application Based on Gitee
+# Chat Application Based on Socket.IO
 
 This is a chat application developed using the Go programming language, built on the Gin framework and Socket.IO. The system includes complete chat functionalities such as account management, message transmission, group management, and friend relationship management.
 
