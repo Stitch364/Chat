@@ -286,6 +286,20 @@ func (q *Queries) GetFriendRelationIdByID1AndID1(ctx context.Context, arg *GetFr
 	return id, err
 }
 
+const getGroupAvatarByID = `-- name: GetGroupAvatarByID :one
+select avatar
+from relations
+where relations.id = ?
+limit 1
+`
+
+func (q *Queries) GetGroupAvatarByID(ctx context.Context, id int64) (sql.NullString, error) {
+	row := q.queryRow(ctx, q.getGroupAvatarByIDStmt, getGroupAvatarByID, id)
+	var avatar sql.NullString
+	err := row.Scan(&avatar)
+	return avatar, err
+}
+
 const getGroupList = `-- name: GetGroupList :many
 select s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self,s.is_leader,
        r.id as relation_id,

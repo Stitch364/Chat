@@ -5,9 +5,9 @@ import (
 )
 
 type ParamCreateFileMsg struct {
-	RelationID int64                 `form:"relation_id"` // 关系 ID
-	File       *multipart.FileHeader `form:"file"`        // 文件
-	RlyMsg     int64                 `form:"rly_msg"`     // 回复消息 ID
+	RelationID int64                 `form:"relation_id"`             // 关系 ID
+	File       *multipart.FileHeader `form:"file" binding:"required"` // 文件
+	RlyMsg     int64                 `form:"rly_msg"`                 // 回复消息 ID
 }
 
 type ParamGetMsgsByRelationIDAndTime struct {

@@ -311,6 +311,7 @@ func (setting) GetShows(ctx *gin.Context, accountID int64) (*reply.ParamGetShows
 					IsShow:       v.IsShow,
 					PinTime:      v.PinTime,
 					LastShow:     v.LastShow,
+					IsLeader:     v.IsLeader,
 				},
 				GroupInfo: groupInfo,
 			})

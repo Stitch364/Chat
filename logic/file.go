@@ -111,27 +111,32 @@ func (file) UploadGroupAvatar(ctx *gin.Context, file *multipart.FileHeader, acco
 	if !ok {
 		return &reply.ParamUploadAvatar{URL: ""}, errcodes.NotGroupMember
 	}
-	oss := initOSS(ali_cloud.GroupAvatarType)
-	var url, key string
-	if file != nil {
-		url, key, err = oss.UploadFile(file)
+	if file == nil {
+		//不改头像,返回原来的头像
+		NullUrl, err := dao.Database.DB.GetGroupAvatarByID(ctx, relationID)
 		if err != nil {
 			global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 			return &reply.ParamUploadAvatar{URL: ""}, errcode.ErrServer
 		}
+		//原本就没有头像，返回空
+		if NullUrl.String == "" || NullUrl.Valid == false {
+			return &reply.ParamUploadAvatar{URL: ""}, nil
+		}
+		//返回原来的头像
+		return &reply.ParamUploadAvatar{URL: NullUrl.String}, nil
 	}
-	if file == nil {
-		url = global.PublicSetting.Rules.DefaultAvatarURL
+	//下面是file != nil的情况
+	oss := initOSS(ali_cloud.GroupAvatarType)
+	var url, key string
+	url, key, err = oss.UploadFile(file)
+	if err != nil {
+		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+		return &reply.ParamUploadAvatar{URL: ""}, errcode.ErrServer
 	}
-
-	//filetype, myErr := gtype.GetFileType(file)
-	//if myErr != nil {
-	//	return &reply.ParamUploadAvatar{URL: ""}, errcode.ErrServer
-	//}
-
+	//改头像
 	err = dao.Database.DB.UploadGroupAvatarWithTx(ctx, db.CreateFileParams{
 		FileName: "groupAvatar",
-		FileType: "",
+		FileType: "image",
 		FileSize: 0,
 		//FileSize:   file.Size,
 		FileKey:    key,
@@ -142,9 +147,6 @@ func (file) UploadGroupAvatar(ctx *gin.Context, file *multipart.FileHeader, acco
 	if err != nil {
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return &reply.ParamUploadAvatar{URL: ""}, errcode.ErrServer
-	}
-	if file == nil {
-		return &reply.ParamUploadAvatar{URL: global.PublicSetting.Rules.DefaultAvatarURL}, nil
 	}
 	return &reply.ParamUploadAvatar{URL: url}, nil
 }

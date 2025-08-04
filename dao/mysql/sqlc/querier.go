@@ -17,16 +17,6 @@ type Querier interface {
 	CreateAccount(ctx context.Context, arg *CreateAccountParams) error
 	// {account1_id:int64,account2_id:int64,apply_msg:string}
 	CreateApplication(ctx context.Context, arg *CreateApplicationParams) error
-	// -- name: CreateFile :one
-	// START TRANSACTION;
-	// INSERT INTO files (
-	//     file_name, file_type, file_size, `key`, url, relation_id, account_id
-	// ) VALUES (
-	//              ?, ?, ?, ?, ?, ?, ?
-	//          );
-	// SELECT * FROM files
-	// WHERE file_id = LAST_INSERT_ID();
-	// COMMIT;
 	CreateFile(ctx context.Context, arg *CreateFileParams) error
 	CreateFriendRelation(ctx context.Context, arg *CreateFriendRelationParams) error
 	CreateGroupRelation(ctx context.Context, arg *CreateGroupRelationParams) error
@@ -100,6 +90,7 @@ type Querier interface {
 	GetFriendSettingsOrderByName(ctx context.Context, arg *GetFriendSettingsOrderByNameParams) ([]*GetFriendSettingsOrderByNameRow, error)
 	GetFriendShowSettingsOrderByShowTime(ctx context.Context, arg *GetFriendShowSettingsOrderByShowTimeParams) ([]*GetFriendShowSettingsOrderByShowTimeRow, error)
 	GetGroupAvatar(ctx context.Context, relationID sql.NullInt64) (*File, error)
+	GetGroupAvatarByID(ctx context.Context, id int64) (sql.NullString, error)
 	GetGroupList(ctx context.Context, arg *GetGroupListParams) ([]*GetGroupListRow, error)
 	GetGroupMembersByID(ctx context.Context, arg *GetGroupMembersByIDParams) ([]*GetGroupMembersByIDRow, error)
 	GetGroupPinSettingsOrderByPinTime(ctx context.Context, arg *GetGroupPinSettingsOrderByPinTimeParams) ([]*GetGroupPinSettingsOrderByPinTimeRow, error)
@@ -107,6 +98,7 @@ type Querier interface {
 	GetGroupRelationsId(ctx context.Context) (int64, error)
 	GetGroupSettingsByName(ctx context.Context, arg *GetGroupSettingsByNameParams) ([]*GetGroupSettingsByNameRow, error)
 	GetGroupShowSettingsOrderByShowTime(ctx context.Context, arg *GetGroupShowSettingsOrderByShowTimeParams) ([]*GetGroupShowSettingsOrderByShowTimeRow, error)
+	GetMessageAndNameByID(ctx context.Context, id int64) (*GetMessageAndNameByIDRow, error)
 	GetMessageByID(ctx context.Context, id int64) (*Message, error)
 	GetMessageInfoTx(ctx context.Context) (*GetMessageInfoTxRow, error)
 	GetMsgDeleteById(ctx context.Context, id int64) (int32, error)

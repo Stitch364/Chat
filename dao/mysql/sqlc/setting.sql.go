@@ -543,7 +543,7 @@ func (q *Queries) GetGroupPinSettingsOrderByPinTime(ctx context.Context, arg *Ge
 }
 
 const getGroupShowSettingsOrderByShowTime = `-- name: GetGroupShowSettingsOrderByShowTime :many
-SELECT s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self,
+SELECT s.relation_id, s.nick_name, s.is_not_disturb, s.is_pin, s.pin_time, s.is_show, s.last_show, s.is_self, s.is_leader,
        r.id,
        r.name,
        r.description,
@@ -556,7 +556,8 @@ FROM (
                 settings.pin_time,
                 settings.is_show,
                 settings.last_show,
-                settings.is_self
+                settings.is_self,
+                settings.is_leader
          FROM settings
                   JOIN relations ON settings.relation_id = relations.id
          WHERE settings.account_id = ?
@@ -587,6 +588,7 @@ type GetGroupShowSettingsOrderByShowTimeRow struct {
 	IsShow       bool
 	LastShow     time.Time
 	IsSelf       bool
+	IsLeader     bool
 	ID           int64
 	Name         sql.NullString
 	Description  sql.NullString
@@ -611,6 +613,7 @@ func (q *Queries) GetGroupShowSettingsOrderByShowTime(ctx context.Context, arg *
 			&i.IsShow,
 			&i.LastShow,
 			&i.IsSelf,
+			&i.IsLeader,
 			&i.ID,
 			&i.Name,
 			&i.Description,

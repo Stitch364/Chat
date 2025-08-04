@@ -180,7 +180,8 @@ FROM (
                 settings.pin_time,
                 settings.is_show,
                 settings.last_show,
-                settings.is_self
+                settings.is_self,
+                settings.is_leader
          FROM settings
                   JOIN relations ON settings.relation_id = relations.id
          WHERE settings.account_id = ?

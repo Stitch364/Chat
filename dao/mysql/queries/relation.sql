@@ -152,3 +152,9 @@ from accounts a
          left join settings s on a.id = s.account_id
 where s.relation_id = ?
 limit ? offset ?;
+
+-- name: GetGroupAvatarByID :one
+select avatar
+from relations
+where relations.id = ?
+limit 1;

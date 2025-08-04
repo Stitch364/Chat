@@ -95,7 +95,7 @@ func (q *Queries) GetAccountIDsByMsgID(ctx context.Context, id int64) (*GetAccou
 }
 
 const getAccountInfoByID = `-- name: GetAccountInfoByID :one
-select accounts.name,settings.nick_name
+select accounts.name,accounts.avatar,settings.nick_name
 from accounts
 join settings on accounts.id = settings.account_id  and relation_id = ?
 where account_id = ?
@@ -108,13 +108,73 @@ type GetAccountInfoByIDParams struct {
 
 type GetAccountInfoByIDRow struct {
 	Name     string
+	Avatar   string
 	NickName string
 }
 
 func (q *Queries) GetAccountInfoByID(ctx context.Context, arg *GetAccountInfoByIDParams) (*GetAccountInfoByIDRow, error) {
 	row := q.queryRow(ctx, q.getAccountInfoByIDStmt, getAccountInfoByID, arg.RelationID, arg.AccountID)
 	var i GetAccountInfoByIDRow
-	err := row.Scan(&i.Name, &i.NickName)
+	err := row.Scan(&i.Name, &i.Avatar, &i.NickName)
+	return &i, err
+}
+
+const getMessageAndNameByID = `-- name: GetMessageAndNameByID :one
+select m.id, notify_type, msg_type, msg_content, coalesce(msg_extend,'[]'), file_id, m.account_id,a.name,s.nick_name,a.avatar,
+       rly_msg_id, m.relation_id, create_at, is_revoke, is_top, m.is_pin, m.pin_time, read_ids, is_delete
+from messages m
+join accounts a on a.id = m.account_id
+join settings s on s.account_id  = m.account_id and s.relation_id = m.relation_id
+where m.id = ?
+limit 1
+`
+
+type GetMessageAndNameByIDRow struct {
+	ID         int64
+	NotifyType MessagesNotifyType
+	MsgType    MessagesMsgType
+	MsgContent string
+	MsgExtend  json.RawMessage
+	FileID     sql.NullInt64
+	AccountID  sql.NullInt64
+	Name       string
+	NickName   string
+	Avatar     string
+	RlyMsgID   sql.NullInt64
+	RelationID int64
+	CreateAt   time.Time
+	IsRevoke   bool
+	IsTop      bool
+	IsPin      bool
+	PinTime    time.Time
+	ReadIds    json.RawMessage
+	IsDelete   int32
+}
+
+func (q *Queries) GetMessageAndNameByID(ctx context.Context, id int64) (*GetMessageAndNameByIDRow, error) {
+	row := q.queryRow(ctx, q.getMessageAndNameByIDStmt, getMessageAndNameByID, id)
+	var i GetMessageAndNameByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.NotifyType,
+		&i.MsgType,
+		&i.MsgContent,
+		&i.MsgExtend,
+		&i.FileID,
+		&i.AccountID,
+		&i.Name,
+		&i.NickName,
+		&i.Avatar,
+		&i.RlyMsgID,
+		&i.RelationID,
+		&i.CreateAt,
+		&i.IsRevoke,
+		&i.IsTop,
+		&i.IsPin,
+		&i.PinTime,
+		&i.ReadIds,
+		&i.IsDelete,
+	)
 	return &i, err
 }
 
@@ -151,9 +211,11 @@ func (q *Queries) GetMessageByID(ctx context.Context, id int64) (*Message, error
 }
 
 const getMessageInfoTx = `-- name: GetMessageInfoTx :one
-SELECT id, msg_content, msg_extend,file_id, create_at
-FROM messages
-WHERE id = LAST_INSERT_ID()
+SELECT m.id, msg_content, msg_extend,file_id, create_at,m.account_id,a.name,a.avatar,s.nick_name
+FROM messages m
+join accounts a on a.id = m.account_id
+join settings s on s.account_id = a.id and s.relation_id = m.relation_id
+WHERE m.id = LAST_INSERT_ID()
 `
 
 type GetMessageInfoTxRow struct {
@@ -162,6 +224,10 @@ type GetMessageInfoTxRow struct {
 	MsgExtend  json.RawMessage
 	FileID     sql.NullInt64
 	CreateAt   time.Time
+	AccountID  sql.NullInt64
+	Name       string
+	Avatar     string
+	NickName   string
 }
 
 func (q *Queries) GetMessageInfoTx(ctx context.Context) (*GetMessageInfoTxRow, error) {
@@ -173,6 +239,10 @@ func (q *Queries) GetMessageInfoTx(ctx context.Context) (*GetMessageInfoTxRow, e
 		&i.MsgExtend,
 		&i.FileID,
 		&i.CreateAt,
+		&i.AccountID,
+		&i.Name,
+		&i.Avatar,
+		&i.NickName,
 	)
 	return &i, err
 }
@@ -199,6 +269,7 @@ select m1.id,
        m1.file_id,
        m1.account_id,
        a.name,
+       a.avatar,
        s.nick_name,
        m1.relation_id,
        m1.create_at,
@@ -229,6 +300,7 @@ type GetMsgsByContentRow struct {
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
 	Name       string
+	Avatar     string
 	NickName   string
 	RelationID int64
 	CreateAt   time.Time
@@ -259,6 +331,7 @@ func (q *Queries) GetMsgsByContent(ctx context.Context, arg *GetMsgsByContentPar
 			&i.FileID,
 			&i.AccountID,
 			&i.Name,
+			&i.Avatar,
 			&i.NickName,
 			&i.RelationID,
 			&i.CreateAt,
@@ -287,6 +360,7 @@ select m1.id,
        m1.file_id,
        m1.account_id,
        a.name,
+       a.avatar,
        s.nick_name,
        m1.relation_id,
        m1.create_at,
@@ -318,6 +392,7 @@ type GetMsgsByContentAndRelationRow struct {
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
 	Name       string
+	Avatar     string
 	NickName   string
 	RelationID int64
 	CreateAt   time.Time
@@ -349,6 +424,7 @@ func (q *Queries) GetMsgsByContentAndRelation(ctx context.Context, arg *GetMsgsB
 			&i.FileID,
 			&i.AccountID,
 			&i.Name,
+			&i.Avatar,
 			&i.NickName,
 			&i.RelationID,
 			&i.CreateAt,
@@ -376,6 +452,8 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       a.avatar,
        m1.rly_msg_id,
        m1.relation_id,
        m1.create_at,
@@ -388,12 +466,11 @@ select m1.id,
        count(*) over () as total,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        s.nick_name
-from messages m1,
-     settings s
+from messages m1
+join accounts a on a.id = m1.account_id
+join settings  s on s.account_id = m1.account_id and s.relation_id = m1.relation_id
 where m1.relation_id = ?
   and m1.create_at < ?
-  and m1.relation_id = s.relation_id
-  and s.account_id = m1.account_id
 order by m1.create_at desc
 limit ? offset ?
 `
@@ -414,6 +491,8 @@ type GetMsgsByRelationIDAndTimeRow struct {
 	MsgExtend  json.RawMessage
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
+	Name       string
+	Avatar     string
 	RlyMsgID   sql.NullInt64
 	RelationID int64
 	CreateAt   time.Time
@@ -451,6 +530,8 @@ func (q *Queries) GetMsgsByRelationIDAndTime(ctx context.Context, arg *GetMsgsBy
 			&i.MsgExtend,
 			&i.FileID,
 			&i.AccountID,
+			&i.Name,
+			&i.Avatar,
 			&i.RlyMsgID,
 			&i.RelationID,
 			&i.CreateAt,
@@ -601,6 +682,9 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       a.avatar,
+       s.nick_name,
        m1.relation_id,
        m1.create_at,
        m1.is_revoke,
@@ -612,6 +696,8 @@ select m1.id,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        count(*) over () as total
 from messages m1
+join settings s on m1.relation_id = s.relation_id and s.account_id = m1.account_id
+join accounts a on a.id = m1.account_id
 where m1.relation_id = ? and m1.rly_msg_id = ?
 order by m1.create_at
 limit ? offset ?
@@ -633,6 +719,9 @@ type GetRlyMsgsInfoByMsgIDRow struct {
 	MsgExtend  json.RawMessage
 	FileID     sql.NullInt64
 	AccountID  sql.NullInt64
+	Name       string
+	Avatar     string
+	NickName   string
 	RelationID int64
 	CreateAt   time.Time
 	IsRevoke   bool
@@ -668,6 +757,9 @@ func (q *Queries) GetRlyMsgsInfoByMsgID(ctx context.Context, arg *GetRlyMsgsInfo
 			&i.MsgExtend,
 			&i.FileID,
 			&i.AccountID,
+			&i.Name,
+			&i.Avatar,
+			&i.NickName,
 			&i.RelationID,
 			&i.CreateAt,
 			&i.IsRevoke,

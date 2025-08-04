@@ -73,7 +73,7 @@ func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*clien
 		NotifyType: db.MessagesNotifyTypeCommon,           //通知类型
 		MsgType:    db.MessagesMsgType(model.MsgTypeText), //消息类型（文本消息）
 		MsgContent: params.MsgContent,                     //消息内容
-		//MsgExtend:  msgExtend,                                           //扩展信息
+		//MsgExtend:  msgExtend,                                         //扩展信息
 		AccountID:  sql.NullInt64{Int64: params.AccountID, Valid: true}, //发送账号
 		RlyMsgID:   sql.NullInt64{Int64: rlyMsgID, Valid: rlyMsgID > 0}, //回复的消息ID
 		RelationID: params.RelationID,                                   //关系ID
@@ -85,14 +85,17 @@ func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*clien
 	//推送消息
 	global.Worker.SendTask(task.PublishMsg(reply.ParamMsgInfoWithRly{
 		ParamMsgInfo: reply.ParamMsgInfo{
-			ID:         result.ID,
-			NotifyType: string(db.MessagesNotifyTypeCommon), //common
-			MsgType:    string(model.MsgTypeText),           //text
-			MsgContent: result.MsgContent,                   //消息内容
-			MsgExtend:  params.MsgExtend,                    //扩展信息
-			AccountID:  params.AccountID,                    //发送的账号ID
-			RelationID: params.RelationID,                   //关系ID
-			CreateAt:   result.CreateAt,                     //消息创建时间
+			ID:            result.ID,
+			NotifyType:    string(db.MessagesNotifyTypeCommon), //common
+			MsgType:       string(model.MsgTypeText),           //text
+			MsgContent:    result.MsgContent,                   //消息内容
+			MsgExtend:     params.MsgExtend,                    //扩展信息
+			AccountID:     params.AccountID,                    //发送的账号ID
+			AccountName:   result.Name,                         //账号名称
+			AccountAvatar: result.Avatar,                       //账号头像
+			NickName:      result.NickName,                     //昵称
+			RelationID:    params.RelationID,                   //关系ID
+			CreateAt:      result.CreateAt,                     //消息创建时间
 		},
 		RlyMsg: rlyMsg, //被回复的消息信息
 	}))

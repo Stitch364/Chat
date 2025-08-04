@@ -2,6 +2,7 @@ package tx
 
 import (
 	db "chat/dao/mysql/sqlc"
+	"chat/global"
 	"context"
 	"database/sql"
 	"errors"
@@ -11,13 +12,12 @@ func (store *MySQLDB) UploadGroupAvatarWithTx(ctx context.Context, arg db.Create
 	return store.execTx(ctx, func(queries *db.Queries) error {
 		var err error
 		_, err = queries.GetGroupAvatar(ctx, arg.RelationID)
-		if err != nil {
-			// 如果没有设置过群头像
-			//if err.Error() == "no rows in result set" {
+		if err != nil && arg.Url != global.PublicSetting.Rules.DefaultAvatarURL {
+			// 如果没有设置过群头像 或者 是默认头像 并且 新的头像不是默认头像
 			if errors.Is(sql.ErrNoRows, err) {
 				err = queries.CreateFile(ctx, &db.CreateFileParams{
 					FileName:   arg.FileName,
-					FileType:   "img",
+					FileType:   "image",
 					FileSize:   arg.FileSize,
 					FileKey:    arg.FileKey,
 					Url:        arg.Url,

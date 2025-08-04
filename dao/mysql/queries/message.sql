@@ -12,9 +12,11 @@ FROM messages
 WHERE id = LAST_INSERT_ID();
 
 -- name: GetMessageInfoTx :one
-SELECT id, msg_content, msg_extend,file_id, create_at
-FROM messages
-WHERE id = LAST_INSERT_ID();
+SELECT m.id, msg_content, msg_extend,file_id, create_at,m.account_id,a.name,a.avatar,s.nick_name
+FROM messages m
+join accounts a on a.id = m.account_id
+join settings s on s.account_id = a.id and s.relation_id = m.relation_id
+WHERE m.id = LAST_INSERT_ID();
 
 
 
@@ -25,8 +27,17 @@ from messages
 where id = ?
 limit 1;
 
+-- name: GetMessageAndNameByID :one
+select m.id, notify_type, msg_type, msg_content, coalesce(msg_extend,'[]'), file_id, m.account_id,a.name,s.nick_name,a.avatar,
+       rly_msg_id, m.relation_id, create_at, is_revoke, is_top, m.is_pin, m.pin_time, read_ids, is_delete
+from messages m
+join accounts a on a.id = m.account_id
+join settings s on s.account_id  = m.account_id and s.relation_id = m.relation_id
+where m.id = ?
+limit 1;
+
 -- name: GetAccountInfoByID :one
-select accounts.name,settings.nick_name
+select accounts.name,accounts.avatar,settings.nick_name
 from accounts
 join settings on accounts.id = settings.account_id  and relation_id = ?
 where account_id = ?;
@@ -39,6 +50,8 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       a.avatar,
        m1.rly_msg_id,
        m1.relation_id,
        m1.create_at,
@@ -51,12 +64,11 @@ select m1.id,
        count(*) over () as total,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        s.nick_name
-from messages m1,
-     settings s
+from messages m1
+join accounts a on a.id = m1.account_id
+join settings  s on s.account_id = m1.account_id and s.relation_id = m1.relation_id
 where m1.relation_id = ?
   and m1.create_at < ?
-  and m1.relation_id = s.relation_id
-  and s.account_id = m1.account_id
 order by m1.create_at desc
 limit ? offset ?;
 
@@ -121,6 +133,9 @@ select m1.id,
        coalesce(m1.msg_extend,'[]'),
        m1.file_id,
        m1.account_id,
+       a.name,
+       a.avatar,
+       s.nick_name,
        m1.relation_id,
        m1.create_at,
        m1.is_revoke,
@@ -132,6 +147,8 @@ select m1.id,
        (select count(id) from messages where rly_msg_id = m1.id and messages.relation_id = ?) as reply_count,
        count(*) over () as total
 from messages m1
+join settings s on m1.relation_id = s.relation_id and s.account_id = m1.account_id
+join accounts a on a.id = m1.account_id
 where m1.relation_id = ? and m1.rly_msg_id = ?
 order by m1.create_at
 limit ? offset ?;
@@ -145,6 +162,7 @@ select m1.id,
        m1.file_id,
        m1.account_id,
        a.name,
+       a.avatar,
        s.nick_name,
        m1.relation_id,
        m1.create_at,
@@ -167,6 +185,7 @@ select m1.id,
        m1.file_id,
        m1.account_id,
        a.name,
+       a.avatar,
        s.nick_name,
        m1.relation_id,
        m1.create_at,

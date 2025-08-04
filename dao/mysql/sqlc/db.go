@@ -201,6 +201,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getGroupAvatarStmt, err = db.PrepareContext(ctx, getGroupAvatar); err != nil {
 		return nil, fmt.Errorf("error preparing query GetGroupAvatar: %w", err)
 	}
+	if q.getGroupAvatarByIDStmt, err = db.PrepareContext(ctx, getGroupAvatarByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetGroupAvatarByID: %w", err)
+	}
 	if q.getGroupListStmt, err = db.PrepareContext(ctx, getGroupList); err != nil {
 		return nil, fmt.Errorf("error preparing query GetGroupList: %w", err)
 	}
@@ -221,6 +224,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getGroupShowSettingsOrderByShowTimeStmt, err = db.PrepareContext(ctx, getGroupShowSettingsOrderByShowTime); err != nil {
 		return nil, fmt.Errorf("error preparing query GetGroupShowSettingsOrderByShowTime: %w", err)
+	}
+	if q.getMessageAndNameByIDStmt, err = db.PrepareContext(ctx, getMessageAndNameByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetMessageAndNameByID: %w", err)
 	}
 	if q.getMessageByIDStmt, err = db.PrepareContext(ctx, getMessageByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMessageByID: %w", err)
@@ -621,6 +627,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getGroupAvatarStmt: %w", cerr)
 		}
 	}
+	if q.getGroupAvatarByIDStmt != nil {
+		if cerr := q.getGroupAvatarByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getGroupAvatarByIDStmt: %w", cerr)
+		}
+	}
 	if q.getGroupListStmt != nil {
 		if cerr := q.getGroupListStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getGroupListStmt: %w", cerr)
@@ -654,6 +665,11 @@ func (q *Queries) Close() error {
 	if q.getGroupShowSettingsOrderByShowTimeStmt != nil {
 		if cerr := q.getGroupShowSettingsOrderByShowTimeStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getGroupShowSettingsOrderByShowTimeStmt: %w", cerr)
+		}
+	}
+	if q.getMessageAndNameByIDStmt != nil {
+		if cerr := q.getMessageAndNameByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getMessageAndNameByIDStmt: %w", cerr)
 		}
 	}
 	if q.getMessageByIDStmt != nil {
@@ -919,6 +935,7 @@ type Queries struct {
 	getFriendSettingsOrderByNameStmt          *sql.Stmt
 	getFriendShowSettingsOrderByShowTimeStmt  *sql.Stmt
 	getGroupAvatarStmt                        *sql.Stmt
+	getGroupAvatarByIDStmt                    *sql.Stmt
 	getGroupListStmt                          *sql.Stmt
 	getGroupMembersByIDStmt                   *sql.Stmt
 	getGroupPinSettingsOrderByPinTimeStmt     *sql.Stmt
@@ -926,6 +943,7 @@ type Queries struct {
 	getGroupRelationsIdStmt                   *sql.Stmt
 	getGroupSettingsByNameStmt                *sql.Stmt
 	getGroupShowSettingsOrderByShowTimeStmt   *sql.Stmt
+	getMessageAndNameByIDStmt                 *sql.Stmt
 	getMessageByIDStmt                        *sql.Stmt
 	getMessageInfoTxStmt                      *sql.Stmt
 	getMsgDeleteByIdStmt                      *sql.Stmt
@@ -1024,6 +1042,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getFriendSettingsOrderByNameStmt:          q.getFriendSettingsOrderByNameStmt,
 		getFriendShowSettingsOrderByShowTimeStmt:  q.getFriendShowSettingsOrderByShowTimeStmt,
 		getGroupAvatarStmt:                        q.getGroupAvatarStmt,
+		getGroupAvatarByIDStmt:                    q.getGroupAvatarByIDStmt,
 		getGroupListStmt:                          q.getGroupListStmt,
 		getGroupMembersByIDStmt:                   q.getGroupMembersByIDStmt,
 		getGroupPinSettingsOrderByPinTimeStmt:     q.getGroupPinSettingsOrderByPinTimeStmt,
@@ -1031,6 +1050,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getGroupRelationsIdStmt:                   q.getGroupRelationsIdStmt,
 		getGroupSettingsByNameStmt:                q.getGroupSettingsByNameStmt,
 		getGroupShowSettingsOrderByShowTimeStmt:   q.getGroupShowSettingsOrderByShowTimeStmt,
+		getMessageAndNameByIDStmt:                 q.getMessageAndNameByIDStmt,
 		getMessageByIDStmt:                        q.getMessageByIDStmt,
 		getMessageInfoTxStmt:                      q.getMessageInfoTxStmt,
 		getMsgDeleteByIdStmt:                      q.getMsgDeleteByIdStmt,

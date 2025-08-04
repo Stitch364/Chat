@@ -130,7 +130,7 @@ func (group) UpdateGroup(ctx *gin.Context) {
 	}
 	avatar, err := logic.Logics.File.UploadGroupAvatar(ctx, params.Avatar, content.ID, params.RelationID)
 	result.Avatar = avatar.URL
-	result.Avatar = ""
+	//result.Avatar = ""
 	rly.Reply(err, result)
 }
 

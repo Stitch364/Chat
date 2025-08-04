@@ -1,15 +1,3 @@
-# -- name: CreateFile :one
-# START TRANSACTION;
-# INSERT INTO files (
-#     file_name, file_type, file_size, `key`, url, relation_id, account_id
-# ) VALUES (
-#              ?, ?, ?, ?, ?, ?, ?
-#          );
-# SELECT * FROM files
-# WHERE file_id = LAST_INSERT_ID();
-# COMMIT;
-
-
 -- name: CreateFile :exec
 insert into files (file_name, file_type, file_size, file_key, url, relation_id, account_id)
 values(?,?,?,?,?,?,?);

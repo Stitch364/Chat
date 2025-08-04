@@ -211,6 +211,11 @@ tips: 模糊查询不能用 '%name%' 要防止SQL注入
     1.所有消息接口reply新增name和nick_name字段
     2.完成了file部分的接口；以及测试，可以成功上传文件
 
+8/4 周一 晴转阵雨
+    1.发送文件消息，按时间查消息，模糊搜索消息，查找回复消息，以及send_msg的Socket.io 响应的信息中增加AccountName,Nick_Name,AccountAvatar
+    2.优化了message/list/time的查询逻辑,查询时间缩短
+    3.修改了已知的Bug
+
 写到了
 8.137.23.88
 
