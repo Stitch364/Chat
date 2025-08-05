@@ -11,3 +11,9 @@ type TestRly struct {
 	ID      string `json:"id,omitempty"`      // ID
 	Address string `json:"address,omitempty"` // 地址
 }
+
+type TestRly2 struct {
+	Msg     string `json:"msg,omitempty"`
+	ID      string `json:"id,omitempty"`      // ID
+	Address string `json:"address,omitempty"` // 地址
+}

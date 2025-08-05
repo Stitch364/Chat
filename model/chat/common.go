@@ -31,5 +31,6 @@ const (
 	ClientSendMsg = "send_msg" // 发送消息
 	ClientReadMsg = "read_msg" // 已读消息
 	ClientTest    = "test"     // 测试
+	ClientTest1   = "test1"    // 测试
 	ClientAuth    = "auth"     // 认证
 )

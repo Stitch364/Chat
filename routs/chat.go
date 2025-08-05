@@ -50,4 +50,6 @@ func chatHandle(server *socketio.Server) {
 	//server.OnEvent(namespace, chat2.ClientReadMsg, api.Apis.Chat.Message.ReadMsg)
 	server.OnEvent(namespace, chat2.ClientAuth, api.Apis.Chat.Handle.Auth) // 账户登录
 	server.OnEvent(namespace, chat2.ClientTest, api.Apis.Chat.Handle.Test)
+	server.OnEvent(namespace, chat2.ClientTest1, api.Apis.Chat.Handle.Test1)
+
 }

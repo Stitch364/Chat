@@ -35,7 +35,7 @@ func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*clien
 	if params.RlyMsgID > 0 {
 		//是回复的消息
 		//获取被回复的消息信息
-		rlyInfo, myerr := logic.GetMsgInfoByID(ctx, params.RlyMsgID)
+		rlyInfo, myerr := logic.GetMsgInfoAndNameByID(ctx, params.RlyMsgID)
 		if myerr != nil {
 			return nil, myerr
 		}
@@ -56,11 +56,15 @@ func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*clien
 		}
 		//被回复的消息信息
 		rlyMsg = &reply.ParamRlyMsg{
-			MsgID:      rlyInfo.ID, //被回复的消息ID
-			MsgContent: rlyInfo.MsgContent,
-			MsgExtend:  rlyMsgExtend,
-			MsgType:    string(rlyInfo.MsgType),
-			IsRevoked:  rlyInfo.IsRevoke,
+			MsgID:         rlyInfo.ID, //被回复的消息ID
+			MsgContent:    rlyInfo.MsgContent,
+			MsgExtend:     rlyMsgExtend,
+			MsgType:       string(rlyInfo.MsgType),
+			IsRevoked:     rlyInfo.IsRevoke,
+			AccountID:     rlyInfo.AccountID.Int64,
+			AccountName:   rlyInfo.Name,
+			NickName:      rlyInfo.NickName,
+			AccountAvatar: rlyInfo.Avatar,
 		}
 	}
 	//msgExtend, err := model.ExtendToJson(params.MsgExtend)

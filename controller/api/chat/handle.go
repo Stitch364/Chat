@@ -5,6 +5,7 @@ import (
 	"chat/model/chat/client"
 	"chat/model/common"
 	"chat/task"
+	"encoding/json"
 	"fmt"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
 	socketio "github.com/googollee/go-socket.io"
@@ -41,7 +42,7 @@ func (handle) OnError(s socketio.Conn, err error) {
 	}
 	global.ChatMap.Leave(s)
 	//log.Println("OnError disconnected: ", s.RemoteAddr().String(), s.ID())
-	fmt.Printf("\033[32m[Error ConnMap] Error: %d sid: %s\033[0m\n", err.Error(), s.ID())
+	fmt.Printf("\033[32m[Error ConnMap] Error: %s sid: %s\033[0m\n", err.Error(), s.ID())
 	//global.Logger.Error(fmt.Sprintf("连接错误 | ID=%s | 错误=%s", s.ID(), err.Error()))
 	_ = s.Close()
 }
@@ -73,6 +74,7 @@ func (handle) Test(s socketio.Conn, msg string) string {
 	if !ok {
 		return ""
 	}
+	fmt.Println("Test:", msg)
 	param := new(client.TestParams)
 	log.Println(msg)
 	if err := common.Decode(msg, param); err != nil {
@@ -88,8 +90,41 @@ func (handle) Test(s socketio.Conn, msg string) string {
 	return result
 }
 
-func (handle) OnDisconnect(s socketio.Conn, _ string) {
+func (handle) Test1(s socketio.Conn, raw map[string]interface{}) {
+	// 如需手动反序列化到结构体
+	jsonBytes, err := json.Marshal(raw)
+	log.Printf("📨 收到原始 JSON: %s", string(jsonBytes))
+	if err != nil {
+		log.Printf("❌ 序列化失败: %v", err)
+		return
+	}
+	log.Printf("📨 收到原始 JSON: %s", string(jsonBytes))
+
+	// 2. 反序列化到结构体
+	params := new(client.TestRly2)
+	if err := json.Unmarshal(jsonBytes, &params); err != nil {
+		log.Printf("❌ 反序列化失败: %v", err)
+		return
+	}
+	// 回显
+	s.Emit("chatResponse", map[string]interface{}{
+		"echo": raw,
+	})
+}
+
+func (handle) OnDisconnect(s socketio.Conn, err string) {
 	global.ChatMap.Leave(s)
 	//fmt.Printf("\033[32m[Error ConnMap] sid: %s\033[0m\n", s.ID())
-	global.Logger.Warn(fmt.Sprintf("连接断开 | ID=%s ", s.ID()))
+
+	logFields := map[string]interface{}{
+		"ID":         s.ID(),
+		"RemoteAddr": s.RemoteAddr().String(),
+		"LocalAddr":  s.LocalAddr().String(),
+		"Namespace":  s.Namespace(),
+		"Rooms":      s.Rooms(),
+		"Context":    s.Context(),
+		"Reason":     err,
+	}
+	global.Logger.Warn(fmt.Sprintf("1.Disconnect logs: %v", logFields))
+	global.Logger.Warn(fmt.Sprintf("2.Disconnect | ID=%s ", s.ID()))
 }
