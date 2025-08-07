@@ -31,30 +31,30 @@ func PublishMsg(msg reply.ParamMsgInfoWithRly) func() {
 	}
 }
 
-// ReadMsg 推送阅读消息事件
-// 参数：读者 ID，消息 Map(accountID:[]msgID)，所有 msgIDs
-func ReadMsg(accessToken string, readerID int64, msgMap map[int64][]int64, allMsgIDs []int64) func() {
-	return func() {
-		if len(msgMap) == 0 {
-			return
-		}
-		enToken := utils.EncodeMD5(accessToken)
-		// 给发送消息者推送
-		for accountID, msgIDs := range msgMap {
-			global.ChatMap.Send(accountID, chat.ClientReadMsg, server.ReadMsg{
-				EnToken:  enToken,
-				MsgIDs:   msgIDs,
-				ReaderID: readerID,
-			})
-		}
-		// 给自己的其他设备同步
-		global.ChatMap.Send(readerID, chat.ClientReadMsg, server.ReadMsg{
-			EnToken:  enToken,
-			MsgIDs:   allMsgIDs,
-			ReaderID: readerID,
-		})
-	}
-}
+//// ReadMsg 推送阅读消息事件
+//// 参数：读者 ID，消息 Map(accountID:[]msgID)，所有 msgIDs
+//func ReadMsg(accessToken string, readerID int64, msgMap map[int64][]int64, allMsgIDs []int64) func() {
+//	return func() {
+//		if len(msgMap) == 0 {
+//			return
+//		}
+//		enToken := utils.EncodeMD5(accessToken)
+//		// 给发送消息者推送
+//		for accountID, msgIDs := range msgMap {
+//			global.ChatMap.Send(accountID, chat.ClientReadMsg, server.ReadMsg{
+//				EnToken:  enToken,
+//				MsgIDs:   msgIDs,
+//				ReaderID: readerID,
+//			})
+//		}
+//		// 给自己的其他设备同步
+//		global.ChatMap.Send(readerID, chat.ClientReadMsg, server.ReadMsg{
+//			EnToken:  enToken,
+//			MsgIDs:   allMsgIDs,
+//			ReaderID: readerID,
+//		})
+//	}
+//}
 
 func UpdateMsgState(accessToken, AccountName, NickName, Avatar string, relationID, msgID, AccountID int64, msgType server.MsgType, state bool) func() {
 	return func() {

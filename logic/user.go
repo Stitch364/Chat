@@ -244,15 +244,15 @@ func getUserInfoByID(ctx *gin.Context, userID int64) (*db.User, errcode.Err) {
 	return userInfo, nil
 }
 
-// 通过邮箱获取用户信息
-func getUserInfoByEmail(ctx *gin.Context, emailStr string) (*db.User, errcode.Err) {
-	userInfo, err := dao.Database.DB.GetUserByEmail(ctx, emailStr)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errcodes.UserNotFound
-		}
-		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
-		return nil, errcode.ErrServer
-	}
-	return userInfo, nil
-}
+//// 通过邮箱获取用户信息
+//func getUserInfoByEmail(ctx *gin.Context, emailStr string) (*db.User, errcode.Err) {
+//	userInfo, err := dao.Database.DB.GetUserByEmail(ctx, emailStr)
+//	if err != nil {
+//		if errors.Is(err, sql.ErrNoRows) {
+//			return nil, errcodes.UserNotFound
+//		}
+//		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+//		return nil, errcode.ErrServer
+//	}
+//	return userInfo, nil
+//}
