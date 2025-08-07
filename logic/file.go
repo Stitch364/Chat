@@ -90,9 +90,15 @@ func (file) PublishFile(ctx *gin.Context, params model.PublishFile) (model.Publi
 		global.Logger.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return model.PublishFileReply{}, errcode.ErrServer
 	}
+	//获取真实的文件类型
+	fileType1, myErr := gtype.GetFileType(params.File)
+	if myErr != nil {
+		return model.PublishFileReply{}, myErr
+	}
 	return model.PublishFileReply{
 		ID:       r.ID,
-		FileType: fileType,
+		FileName: params.File.Filename,
+		FileType: fileType1,
 		FileSize: r.FileSize,
 		Url:      r.Url,
 		CreateAt: r.CreateAt,

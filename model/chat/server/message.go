@@ -26,8 +26,13 @@ const (
 )
 
 type UpdateMsgState struct {
-	EnToken string  `json:"en_token,omitempty"` // 加密后的 token
-	MsgType MsgType `json:"msg_type,omitempty"` // 消息类型 [pin, top, revoke]
-	MsgID   int64   `json:"msg_id,omitempty"`   // 消息 ID
-	State   bool    `json:"state"`              // 状态设置
+	EnToken     string  `json:"en_token,omitempty"` // 加密后的 token
+	MsgType     MsgType `json:"msg_type,omitempty"` // 消息类型 [pin, top, revoke]
+	MsgID       int64   `json:"msg_id,omitempty"`   // 消息 ID
+	State       bool    `json:"state"`              // 状态设置
+	RelationId  int64   `json:"relation_id,omitempty"`
+	AccountID   int64   `json:"account_id,omitempty"`
+	AccountName string  `json:"account_name,omitempty"`
+	NickName    string  `json:"nick_name,omitempty"`
+	Avatar      string  `json:"avatar,omitempty"`
 }

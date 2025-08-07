@@ -62,11 +62,37 @@ func (message) CreateFileMsg(ctx *gin.Context, params model.CreateFileMsg) (*rep
 			global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 			return nil, errcode.ErrServer
 		}
+
+		//是文件类消息
+		fileInfo := &db.File{
+			ID:         0,
+			FileName:   "",
+			FileType:   "",
+			FileSize:   0,
+			FileKey:    "",
+			Url:        "",
+			RelationID: sql.NullInt64{},
+			AccountID:  sql.NullInt64{},
+			CreateAt:   time.Time{},
+		}
+		var myErr1 error
+		if rltInfo.MsgType == db.MessagesMsgTypeFile {
+			fileInfo, myErr1 = dao.Database.DB.GetFileDetailsByID(ctx, rltInfo.FileID.Int64)
+			if myErr1 != nil {
+				//查询出错了
+				global.Logger.Error(myErr1.Error(), middlewares.ErrLogMsg(ctx)...)
+				return nil, errcode.ErrServer
+			}
+		}
 		rlyMsg = &reply.ParamRlyMsg{
 			MsgID:   rltInfo.ID,
 			MsgType: string(rltInfo.MsgType),
 			//MsgType:    fileType,
 			MsgContent:    rltInfo.MsgContent,
+			FileID:        fileInfo.ID,
+			FileName:      fileInfo.FileName,
+			FileSize:      fileInfo.FileSize,
+			FileType:      string(fileInfo.FileType),
 			MsgExtend:     rlyMsgExtend,
 			IsRevoked:     rltInfo.IsRevoke,
 			AccountID:     rltInfo.AccountID.Int64,
@@ -111,6 +137,10 @@ func (message) CreateFileMsg(ctx *gin.Context, params model.CreateFileMsg) (*rep
 			AccountAvatar: data.Avatar,
 			RelationID:    params.RelationID,
 			CreateAt:      result.CreateAt,
+			FileID:        result.ID,
+			FileName:      fileInfo.FileName,
+			FileSize:      fileInfo.FileSize,
+			FileType:      fileInfo.FileType,
 		},
 		RlyMsg: rlyMsg,
 	}))
@@ -120,8 +150,11 @@ func (message) CreateFileMsg(ctx *gin.Context, params model.CreateFileMsg) (*rep
 		NickName:      data.NickName,
 		AccountAvatar: data.Avatar,
 		ID:            result.ID,
-		MsgContent:    result.MsgContent,
+		MsgContent:    result.MsgContent, //URL
 		FileID:        result.FileID.Int64,
+		FileName:      fileInfo.FileName,
+		FileSize:      fileInfo.FileSize,
+		FileType:      fileInfo.FileType,
 		CreateAt:      result.CreateAt,
 	}, nil
 
@@ -198,14 +231,40 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 			//	RelationID: rlyMsgInfo.RelationID,
 			//	AccountID:  rlyMsgInfo.AccountID.Int64,
 			//})
-			if err != nil {
-				global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
-				continue
+			//if err != nil {
+			//	global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
+			//	continue
+			//}
+
+			//是文件类消息
+			fileInfo1 := &db.File{
+				ID:         0,
+				FileName:   "",
+				FileType:   "",
+				FileSize:   0,
+				FileKey:    "",
+				Url:        "",
+				RelationID: sql.NullInt64{},
+				AccountID:  sql.NullInt64{},
+				CreateAt:   time.Time{},
+			}
+			var myErr2 error
+			if rlyMsgInfo.MsgType == db.MessagesMsgTypeFile {
+				fileInfo1, myErr2 = dao.Database.DB.GetFileDetailsByID(ctx, rlyMsgInfo.FileID.Int64)
+				if myErr2 != nil {
+					//查询出错了
+					global.Logger.Error(myErr2.Error(), middlewares.ErrLogMsg(ctx)...)
+					return nil, errcode.ErrServer
+				}
 			}
 			rlyMsg = &reply.ParamRlyMsg{
 				MsgID:         v.RlyMsgID.Int64,
 				MsgType:       string(rlyMsgInfo.MsgType),
 				MsgContent:    rlyContent,
+				FileID:        fileInfo1.ID,
+				FileName:      fileInfo1.FileName,
+				FileSize:      fileInfo1.FileSize,
+				FileType:      string(fileInfo1.FileType),
 				MsgExtend:     rlyExtend,
 				IsRevoked:     rlyMsgInfo.IsRevoke,
 				AccountID:     rlyMsgInfo.AccountID.Int64,
@@ -231,6 +290,27 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 			global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 			continue
 		}
+		//是文件类消息
+		fileInfo := &db.File{
+			ID:         0,
+			FileName:   "",
+			FileType:   "",
+			FileSize:   0,
+			FileKey:    "",
+			Url:        "",
+			RelationID: sql.NullInt64{},
+			AccountID:  sql.NullInt64{},
+			CreateAt:   time.Time{},
+		}
+		var myErr1 error
+		if v.MsgType == db.MessagesMsgTypeFile {
+			fileInfo, myErr1 = dao.Database.DB.GetFileDetailsByID(ctx, v.FileID.Int64)
+			if myErr1 != nil {
+				//查询出错了
+				global.Logger.Error(myErr1.Error(), middlewares.ErrLogMsg(ctx)...)
+				return nil, errcode.ErrServer
+			}
+		}
 		result = append(result, &reply.ParamMsgInfoWithRly{
 			ParamMsgInfo: reply.ParamMsgInfo{
 				ID:            v.ID,
@@ -239,6 +319,9 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 				MsgContent:    content,
 				MsgExtend:     extend,
 				FileID:        v.FileID.Int64,
+				FileName:      fileInfo.FileName,
+				FileSize:      fileInfo.FileSize,
+				FileType:      string(fileInfo.FileType),
 				AccountID:     v.AccountID.Int64,
 				AccountName:   v.Name,
 				NickName:      v.NickName,
@@ -384,6 +467,27 @@ func (message) GetRlyMsgsInfoByMsgID(ctx *gin.Context, accountID, relationID, ms
 			}
 		}
 
+		//是文件类消息
+		fileInfo := &db.File{
+			ID:         0,
+			FileName:   "",
+			FileType:   "",
+			FileSize:   0,
+			FileKey:    "",
+			Url:        "",
+			RelationID: sql.NullInt64{},
+			AccountID:  sql.NullInt64{},
+			CreateAt:   time.Time{},
+		}
+		var myErr2 error
+		if v.MsgType == db.MessagesMsgTypeFile {
+			fileInfo, myErr2 = dao.Database.DB.GetFileDetailsByID(ctx, v.FileID.Int64)
+			if myErr2 != nil {
+				//查询出错了
+				global.Logger.Error(myErr2.Error(), middlewares.ErrLogMsg(ctx)...)
+				return nil, errcode.ErrServer
+			}
+		}
 		result = append(result, &reply.ParamMsgInfo{
 			ID:            v.ID,
 			NotifyType:    string(v.NotifyType),
@@ -391,6 +495,9 @@ func (message) GetRlyMsgsInfoByMsgID(ctx *gin.Context, accountID, relationID, ms
 			MsgContent:    content,
 			MsgExtend:     extend,
 			FileID:        v.FileID.Int64,
+			FileName:      fileInfo.FileName,
+			FileSize:      fileInfo.FileSize,
+			FileType:      string(fileInfo.FileType),
 			AccountID:     v.AccountID.Int64,
 			AccountName:   v.Name,
 			AccountAvatar: v.Avatar,
@@ -445,6 +552,27 @@ func getMsgsByContentAndRelation(ctx *gin.Context, params *db.GetMsgsByContentAn
 			DelMsgSum++
 			continue
 		}
+		//是文件类消息
+		fileInfo := &db.File{
+			ID:         0,
+			FileName:   "",
+			FileType:   "",
+			FileSize:   0,
+			FileKey:    "",
+			Url:        "",
+			RelationID: sql.NullInt64{},
+			AccountID:  sql.NullInt64{},
+			CreateAt:   time.Time{},
+		}
+		var myErr2 error
+		if v.MsgType == db.MessagesMsgTypeFile {
+			fileInfo, myErr2 = dao.Database.DB.GetFileDetailsByID(ctx, v.FileID.Int64)
+			if myErr2 != nil {
+				//查询出错了
+				global.Logger.Error(myErr2.Error(), middlewares.ErrLogMsg(ctx)...)
+				return nil, errcode.ErrServer
+			}
+		}
 		result = append(result, &reply.ParamBriefMsgInfo{
 			ID:            v.ID,
 			NotifyType:    string(v.NotifyType),
@@ -452,6 +580,9 @@ func getMsgsByContentAndRelation(ctx *gin.Context, params *db.GetMsgsByContentAn
 			MsgContent:    v.MsgContent,
 			Extend:        extend,
 			FileID:        v.FileID.Int64,
+			FileName:      fileInfo.FileName,
+			FileSize:      fileInfo.FileSize,
+			FileType:      string(fileInfo.FileType),
 			AccountID:     v.AccountID.Int64,
 			AccountName:   v.Name,
 			NickName:      v.NickName,
@@ -513,6 +644,28 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 			DelMsgSum++
 			continue
 		}
+
+		//是文件类消息
+		fileInfo := &db.File{
+			ID:         0,
+			FileName:   "",
+			FileType:   "",
+			FileSize:   0,
+			FileKey:    "",
+			Url:        "",
+			RelationID: sql.NullInt64{},
+			AccountID:  sql.NullInt64{},
+			CreateAt:   time.Time{},
+		}
+		var myErr2 error
+		if v.MsgType == db.MessagesMsgTypeFile {
+			fileInfo, myErr2 = dao.Database.DB.GetFileDetailsByID(ctx, v.FileID.Int64)
+			if myErr2 != nil {
+				//查询出错了
+				global.Logger.Error(myErr2.Error(), middlewares.ErrLogMsg(ctx)...)
+				return nil, errcode.ErrServer
+			}
+		}
 		result = append(result, &reply.ParamBriefMsgInfo{
 			ID:            v.ID,
 			NotifyType:    string(v.NotifyType),
@@ -520,6 +673,9 @@ func (message) GetMsgsByContent(ctx *gin.Context, accountID, relationID int64, c
 			MsgContent:    v.MsgContent,
 			Extend:        extend,
 			FileID:        v.FileID.Int64,
+			FileName:      fileInfo.FileName,
+			FileSize:      fileInfo.FileSize,
+			FileType:      string(fileInfo.FileType),
 			AccountID:     v.AccountID.Int64,
 			AccountName:   v.Name,
 			NickName:      v.NickName,
@@ -542,7 +698,7 @@ func (message) UpdateMsgPin(ctx *gin.Context, accountID int64, params *request.P
 	if !ok {
 		return errcodes.AuthPermissionsInsufficient
 	}
-	msgInfo, err := GetMsgInfoByID(ctx, params.ID)
+	msgInfo, err := GetMsgInfoAndNameByID(ctx, params.ID)
 	if err != nil {
 		return err
 	}
@@ -559,7 +715,7 @@ func (message) UpdateMsgPin(ctx *gin.Context, accountID int64, params *request.P
 	}
 	// 推送 pin 通知
 	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
-	global.Worker.SendTask(task.UpdateMsgState(accessToken, params.RelationID, params.ID, server.MsgPin, params.IsPin))
+	global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.Name, msgInfo.NickName, msgInfo.Avatar, params.RelationID, params.ID, msgInfo.AccountID.Int64, server.MsgPin, params.IsPin))
 	return nil
 }
 
@@ -572,7 +728,7 @@ func (message) UpdateMsgTop(ctx *gin.Context, accountID int64, params *request.P
 	if !ok {
 		return errcodes.AuthPermissionsInsufficient
 	}
-	msgInfo, err := GetMsgInfoByID(ctx, params.ID)
+	msgInfo, err := GetMsgInfoAndNameByID(ctx, params.ID)
 	if err != nil {
 		return err
 	}
@@ -589,7 +745,7 @@ func (message) UpdateMsgTop(ctx *gin.Context, accountID int64, params *request.P
 	}
 	// 推送 置顶 消息
 	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
-	global.Worker.SendTask(task.UpdateMsgState(accessToken, params.RelationID, params.ID, server.MsgTop, params.IsTop))
+	global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.Name, msgInfo.NickName, msgInfo.Avatar, params.RelationID, params.ID, msgInfo.AccountID.Int64, server.MsgPin, params.IsTop))
 	// 创建并推送 top 消息
 	f := func() error {
 		arg := &db.CreateMessageParams{
@@ -623,31 +779,31 @@ func (message) UpdateMsgTop(ctx *gin.Context, accountID int64, params *request.P
 	return nil
 }
 
-func (message) RevokeMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
-	msgInfo, err := GetMsgInfoByID(ctx, msgID)
+func (message) RevokeMsg(ctx *gin.Context, accountID, msgID int64) (*reply.ParamGetRevokeMsgByRelationID, errcode.Err) {
+	msgInfo, err := GetMsgInfoAndNameByID(ctx, msgID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// 检查权限(是不是本人)
 	if msgInfo.AccountID.Int64 != accountID {
-		return errcodes.AuthPermissionsInsufficient
+		return nil, errcodes.AuthPermissionsInsufficient
 	}
 	if msgInfo.IsRevoke {
-		return errcodes.MsgAlreadyRevoke
+		return nil, errcodes.MsgAlreadyRevoke
 	}
 	if diffMinutes := int(time.Since(msgInfo.CreateAt).Minutes()); diffMinutes > 2 {
-		return errcodes.MsgRevokeTimeOut
+		return nil, errcodes.MsgRevokeTimeOut
 	}
 	myErr := dao.Database.DB.RevokeMsgWithTx(ctx, msgID, msgInfo.IsPin, msgInfo.IsTop)
 	if myErr != nil {
 		global.Logger.Error(myErr.Error(), middlewares.ErrLogMsg(ctx)...)
-		return errcode.ErrServer
+		return nil, errcode.ErrServer
 	}
 	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
-	global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.RelationID, msgID, server.MsgRevoke, true))
+	global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.Name, msgInfo.NickName, msgInfo.Avatar, msgInfo.RelationID, msgID, msgInfo.AccountID.Int64, server.MsgRevoke, true))
 	if msgInfo.IsTop {
 		// 推送 top 通知
-		global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.RelationID, msgID, server.MsgTop, false))
+		global.Worker.SendTask(task.UpdateMsgState(accessToken, msgInfo.Name, msgInfo.NickName, msgInfo.Avatar, msgInfo.RelationID, msgID, msgInfo.AccountID.Int64, server.MsgTop, false))
 		// 创建并推送 top 消息
 		f := func() error {
 			arg := &db.CreateMessageParams{
@@ -679,7 +835,13 @@ func (message) RevokeMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {
 			reTry("RevokeMsg", f)
 		}
 	}
-	return nil
+	return &reply.ParamGetRevokeMsgByRelationID{
+		AccountID:     accountID,
+		AccountName:   msgInfo.Name,
+		NickName:      msgInfo.NickName,
+		AccountAvatar: msgInfo.Avatar,
+		RelationId:    msgInfo.RelationID,
+	}, nil
 }
 
 func (message) DeleteMsg(ctx *gin.Context, accountID, msgID int64) errcode.Err {

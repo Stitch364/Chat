@@ -8,6 +8,7 @@ import (
 	"chat/middlewares"
 	"chat/model"
 	"chat/model/reply"
+	"chat/task"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -204,9 +205,9 @@ func (user) UpdateUserEmail(ctx *gin.Context, userID int64, code, newEmail strin
 		global.Logger.Error(err.Error(), middlewares.ErrLogMsg(ctx)...)
 		return errcode.ErrServer
 	}
-	/*	// 推送更改邮箱通知
-		accessToken, _ := middlewares.GetToken(ctx.Request.Header)
-		global.Worker.SendTask(task.UpdateEmail(accessToken, userID, emailStr))*/
+	// 推送更改邮箱通知
+	accessToken, _ := middlewares.GetToken(ctx.Request.Header)
+	global.Worker.SendTask(task.UpdateEmail(accessToken, userID, newEmail))
 	return nil
 }
 

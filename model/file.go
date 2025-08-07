@@ -13,6 +13,7 @@ type PublishFile struct {
 
 type PublishFileReply struct {
 	ID       int64     `json:"id,omitempty"`
+	FileName string    `json:"file_name,omitempty"`
 	FileType string    `json:"file_type,omitempty"`
 	FileSize int64     `json:"file_size,omitempty"`
 	Url      string    `json:"url,omitempty"`

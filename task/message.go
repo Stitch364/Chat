@@ -56,7 +56,7 @@ func ReadMsg(accessToken string, readerID int64, msgMap map[int64][]int64, allMs
 	}
 }
 
-func UpdateMsgState(accessToken string, relationID, msgID int64, msgType server.MsgType, state bool) func() {
+func UpdateMsgState(accessToken, AccountName, NickName, Avatar string, relationID, msgID, AccountID int64, msgType server.MsgType, state bool) func() {
 	return func() {
 		ctx, cancel := global.DefaultContextWithTimeout()
 		defer cancel()
@@ -66,10 +66,15 @@ func UpdateMsgState(accessToken string, relationID, msgID int64, msgType server.
 			return
 		}
 		global.ChatMap.SendMany(accountIDs, chat.ServerUpdateMsgState, server.UpdateMsgState{
-			EnToken: utils.EncodeMD5(accessToken),
-			MsgType: msgType,
-			MsgID:   msgID,
-			State:   state,
+			EnToken:     utils.EncodeMD5(accessToken),
+			MsgType:     msgType,
+			MsgID:       msgID,
+			State:       state,
+			RelationId:  relationID,
+			AccountID:   AccountID,
+			AccountName: AccountName,
+			NickName:    NickName,
+			Avatar:      Avatar,
 		})
 	}
 }

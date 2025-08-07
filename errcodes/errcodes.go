@@ -33,17 +33,10 @@ var (
 	NotLeader                   = errcode.NewErr(7001, "非群主")
 	IsLeader                    = errcode.NewErr(7002, "群主不可退群")
 	NotGroupMember              = errcode.NewErr(7003, "非该群成员")
-	//UserHasAccount              = errcode.NewErr(3005, "用户存在账户")     // 删除用户时用户仍存在账户
-	//AccountGroupLeader          = errcode.NewErr(3006, "账号作为群主不能删除") // 删除账户时，账户存在群主身份
-
-	//RelationExists              = errcode.NewErr(4001, "关系已经存在")
-
-	//MsgAlreadyRead              = errcode.NewErr(5005, "消息已经阅读")
-
-	FailedStore      = errcode.NewErr(8001, "存储文件失败")
-	FileNotExist     = errcode.NewErr(8002, "文件不存在")
-	FileTooBig       = errcode.NewErr(8004, "文件过大")
-	FileDeleteFailed = errcode.NewErr(8003, "文件删除失败")
-	FileIsEmpty      = errcode.NewErr(8005, "文件为空")
-	NotifyNotExist   = errcode.NewErr(9001, "通知不存在")
+	FailedStore                 = errcode.NewErr(8001, "存储文件失败")
+	FileNotExist                = errcode.NewErr(8002, "文件不存在")
+	FileTooBig                  = errcode.NewErr(8004, "文件过大")
+	FileDeleteFailed            = errcode.NewErr(8003, "文件删除失败")
+	FileIsEmpty                 = errcode.NewErr(8005, "文件为空")
+	NotifyNotExist              = errcode.NewErr(9001, "通知不存在")
 )

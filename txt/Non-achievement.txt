@@ -27,4 +27,6 @@ sqlc 的 CreateMessageReturn 使用了 LAST_INSERT_ID()，并且没有使用事�
 
 logic/message.go 中 CreateFileMsg 方法 87行 调用CreateMessageReturn 会有上面一样的问题(同上，说的是一个)
 
+logic/file.go 中的 PublishFile 的GetCreateFile有并发危险
+
 

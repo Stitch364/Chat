@@ -13,6 +13,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/XYYSWK/Lutils/pkg/app/errcode"
+	"time"
 )
 
 type message struct {
@@ -54,6 +55,28 @@ func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*clien
 		if err != nil {
 			return nil, errcode.ErrServer
 		}
+
+		//是文件类消息
+		fileInfo := &db.File{
+			ID:         0,
+			FileName:   "",
+			FileType:   "",
+			FileSize:   0,
+			FileKey:    "",
+			Url:        "",
+			RelationID: sql.NullInt64{},
+			AccountID:  sql.NullInt64{},
+			CreateAt:   time.Time{},
+		}
+		var myErr1 error
+		if rlyInfo.MsgType == db.MessagesMsgTypeFile {
+			fileInfo, myErr1 = dao.Database.DB.GetFileDetailsByID(ctx, rlyInfo.FileID.Int64)
+			if myErr1 != nil {
+				//查询出错了
+				global.Logger.Error(myErr1.Error())
+				return nil, errcode.ErrServer
+			}
+		}
 		//被回复的消息信息
 		rlyMsg = &reply.ParamRlyMsg{
 			MsgID:         rlyInfo.ID, //被回复的消息ID
@@ -65,6 +88,10 @@ func (message) SendMsg(ctx context.Context, params *model.HandleSendMsg) (*clien
 			AccountName:   rlyInfo.Name,
 			NickName:      rlyInfo.NickName,
 			AccountAvatar: rlyInfo.Avatar,
+			FileID:        fileInfo.ID,
+			FileName:      fileInfo.FileName,
+			FileType:      string(fileInfo.FileType),
+			FileSize:      fileInfo.FileSize,
 		}
 	}
 	//msgExtend, err := model.ExtendToJson(params.MsgExtend)
