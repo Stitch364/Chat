@@ -173,6 +173,7 @@ func (message) GetMsgsByRelationIDAndTime(ctx *gin.Context, params model.GetMsgs
 	data, err := dao.Database.DB.GetMsgsByRelationIDAndTime(ctx, &db.GetMsgsByRelationIDAndTimeParams{
 		RelationID:   params.RelationID,
 		RelationID_2: params.RelationID,
+		ID:           params.RelationID,
 		CreateAt:     params.LastTime,
 		Limit:        params.Limit,
 		Offset:       params.Offset,

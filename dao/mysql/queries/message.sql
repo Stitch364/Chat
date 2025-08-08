@@ -66,7 +66,22 @@ select m1.id,
        s.nick_name
 from messages m1
 join accounts a on a.id = m1.account_id
-join settings  s on s.account_id = m1.account_id and s.relation_id = m1.relation_id
+JOIN   settings  s
+       ON s.relation_id = m1.relation_id
+           AND s.account_id = CASE
+              WHEN (SELECT r.relation
+                    FROM relations r
+                    WHERE r.id = ?) = 'friend'
+                  THEN  -- 好友关系：取对方账号的 setting
+                  (SELECT CASE
+                              WHEN m1.account_id = r1.account1_id THEN r1.account2_id
+                              ELSE r1.account1_id
+                              END
+                   FROM relations r1
+                   WHERE r1.id = m1.relation_id)
+              ELSE  -- 非好友关系：取自己账号的 setting
+                  m1.account_id
+                  END
 where m1.relation_id = ?
   and m1.create_at < ?
 order by m1.create_at desc
